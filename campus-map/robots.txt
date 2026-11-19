@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /campus-map/
+Disallow: /campus-map/qr.html
+Disallow: /campus-map/tests/
+Disallow: /campus-map/tools/
+
+Sitemap: https://dotclubibsh.github.io/campus-map/sitemap.xml

@@ -1,0 +1,23 @@
+{
+  "name": "Campus Connect · IFHE Hyderabad Campus Map",
+  "short_name": "Campus Connect",
+  "description": "Find any classroom, hostel, canteen or office on the IFHE Hyderabad campus and walk there with turn-by-turn directions. Made by Dot Club, IBS Hyderabad.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#121318",
+  "theme_color": "#121318",
+  "lang": "en-IN",
+  "categories": ["navigation", "education", "utilities"],
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Library", "url": "./?from=lib", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Main Gate", "url": "./?from=mg", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

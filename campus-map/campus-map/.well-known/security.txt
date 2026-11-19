@@ -1,0 +1,5 @@
+Contact: https://www.instagram.com/dotclub_ibs/
+Expires: 2027-11-03T00:00:00.000Z
+Preferred-Languages: en, hi, te
+Canonical: https://dotclubibsh.github.io/campus-map/.well-known/security.txt
+Policy: https://dotclubibsh.github.io/campus-map/legal.html#security

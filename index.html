@@ -1,19 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-6E1FY0L6WM"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-6E1FY0L6WM');
-</script>
-<link rel="icon" type="image/png" href="assets/dot.png">
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Campus Map Mobile</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-FbEesqBxJOEL9IKaA61h3CBmORlx/VE9SUXljIZr3+I=' https://unpkg.com https://cdn.jsdelivr.net https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: blob: https://*.google-analytics.com https://www.googletagmanager.com; connect-src 'self' blob: data: https://unpkg.com https://cdn.jsdelivr.net https://www.gstatic.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; worker-src 'self' blob:; manifest-src 'self'; font-src 'self'; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Campus Connect · IFHE Hyderabad Campus Map</title>
+<meta name="description" content="Campus Connect: find any classroom, hostel, canteen or office on the IFHE Hyderabad campus and walk there with turn-by-turn directions. Made by Dot Club, IBS Hyderabad.">
+<meta name="theme-color" content="#121318">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://dotclubibsh.github.io/campus-map/">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Campus Connect">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Campus Connect">
+<meta property="og:title" content="Campus Connect · IFHE Hyderabad Campus Map">
+<meta property="og:description" content="Find any place on campus and get walking directions.">
+<meta property="og:url" content="https://dotclubibsh.github.io/campus-map/">
+<meta property="og:image" content="https://dotclubibsh.github.io/campus-map/assets/share/campus.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Aerial photo of the IFHE Hyderabad campus">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css" integrity="sha384-eyrYgcjChmzD338JTHFZssgJHOqqOZbajet8yZpCw8ESroLDi28BarMEKCImNGHC" crossorigin="anonymous">
 <style>
   :root {
     --bg-dark: #121318;
@@ -82,6 +98,11 @@
     flex-shrink: 0;
   }
   .icon-btn svg { width: 20px; height: 20px; fill: currentColor; }
+  /* Voice search: the mic turns red and pulses while it is listening. */
+  #btn-voice-search[hidden] { display: none; }
+  #btn-voice-search.listening { color: #ff6b6b; animation: micPulse 1.1s ease-in-out infinite; }
+  @keyframes micPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+  @media (prefers-reduced-motion: reduce) { #btn-voice-search.listening { animation: none; } }
   .divider { width: 1px; height: 24px; background: var(--glass-border); margin: 0 8px; flex-shrink: 0;}
 
   /* --- ROTATING PLACEHOLDER STYLES --- */
@@ -418,6 +439,23 @@
     color: rgba(255, 255, 255, 0.7); font-weight: 600;
   }
 
+  /* --- CAMPUS CONNECT BRAND --- */
+  /* The mark matches the app icon (tools/make_icons.py): a pin at the end of a dotted route. */
+  .cc-wordmark {
+    display: inline-flex; align-items: center; gap: 8px;
+    color: var(--text-main); font-weight: 700; letter-spacing: -0.2px; white-space: nowrap;
+  }
+  .cc-wordmark .cc-mark { width: 1.6em; height: 1.6em; flex-shrink: 0; }
+  .cc-wordmark b { color: #8ab4f8; font-weight: 700; }
+  .footer-brand { font-size: 14px; text-decoration: none; pointer-events: auto; }
+  #loading-brand {
+    margin-top: 22px; font-size: 30px;
+    opacity: 0; transform: translateY(10px);
+    animation: subtitleFadeIn 0.4s ease-out 0.6s forwards;   /* In by 1 s; a fast load hides the screen at 1.5 s */
+  }
+  #loading-brand + #loading-progress { margin-top: 18px; }
+  .about-head .cc-wordmark { font-size: 19px; }
+
 /* --- Loading Screen Styles --- */
   #loading-screen {
     position: fixed;
@@ -517,14 +555,463 @@
     text-align: center;
     letter-spacing: 0.3px;
   }
+
+  /* --- DIRECTIONS --- */
+  #sheet-actions { display: flex; gap: 10px; margin-top: 16px; }
+  #btn-share {
+    display: none; flex-shrink: 0; height: 44px; padding: 0 18px;
+    background: transparent; color: var(--text-main); border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 22px; font-size: 15px; font-weight: 600; cursor: pointer;
+    align-items: center; justify-content: center; gap: 8px;
+  }
+  #btn-share svg { width: 18px; height: 18px; fill: currentColor; }
+  #btn-directions {
+    display: none; flex: 1; min-width: 0; height: 44px;
+    background: var(--accent-blue); color: white; border: none; border-radius: 22px;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+    align-items: center; justify-content: center; gap: 8px;
+  }
+  #btn-directions svg { width: 18px; height: 18px; fill: currentColor; }
+
+  #nav-panel { display: none; position: absolute; top: 24px; left: 16px; right: 16px; z-index: 100; }
+  #nav-panel.active { display: block; }
+  #nav-fields { border-radius: 24px; padding: 8px 8px 8px 20px; }
+  .nav-row { display: flex; align-items: center; gap: 10px; min-height: 40px; }
+  .nav-row + .nav-row { border-top: 1px solid var(--glass-border); }
+  .nav-label { font-size: 12px; color: var(--text-muted); width: 32px; flex-shrink: 0; }
+  #nav-from {
+    flex: 1; min-width: 0; background: transparent; border: none; outline: none;
+    color: var(--text-main); font-size: 16px; user-select: text;
+  }
+  #nav-from::placeholder { color: var(--text-muted); }
+  #nav-to {
+    flex: 1; min-width: 0; color: var(--text-main); font-size: 15px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #btn-nav-gps.tracking { color: var(--accent-blue); }
+  #nav-suggestions {
+    background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border); border-radius: 20px;
+    margin-top: 8px; max-height: calc(100vh - 380px); overflow-y: auto; display: none;
+  }
+  #nav-suggestions.active { display: block; }
+
+  #nav-section { display: none; }
+  #bottom-sheet.nav-active #nav-section { display: block; }
+  #bottom-sheet.nav-active #sheet-tags,
+  #bottom-sheet.nav-active #row-nearby,
+  #bottom-sheet.nav-active #btn-directions,
+  #bottom-sheet.nav-active #btn-share { display: none !important; }
+  #nav-summary { font-size: 20px; font-weight: 600; color: var(--text-main); margin-top: 12px; }
+  #nav-summary:empty { display: none; }
+  .nav-text { font-size: 13px; line-height: 1.4; color: var(--text-muted); margin-top: 8px; }
+  .nav-text:empty { display: none; }
+  #nav-status.warning { color: #fdd663; }
+  #nav-next { font-size: 15px; font-weight: 600; color: #8ab4f8; margin-top: 8px; }
+  #nav-next:empty { display: none; }
+  #nav-stepfree-row {
+    display: flex; align-items: center; gap: 10px; margin-top: 12px; min-height: 32px;
+    font-size: 14px; color: var(--text-main); cursor: pointer;
+  }
+  #nav-stepfree { width: 18px; height: 18px; accent-color: var(--accent-blue); }
+  #nav-steps-wrap { display: none; margin-top: 8px; border-top: 1px solid var(--glass-border); }
+  #nav-steps-wrap summary { padding: 10px 0; font-size: 14px; font-weight: 500; color: var(--text-main); cursor: pointer; }
+  #nav-steps { list-style: none; max-height: 22vh; overflow-y: auto; }
+  #nav-steps li {
+    font-size: 13px; line-height: 1.4; color: var(--text-muted);
+    padding: 8px 10px; border-radius: 10px;
+  }
+  #nav-steps li.current { background: rgba(66, 133, 244, 0.15); color: var(--text-main); }
+
+  /* QR starting point */
+  #qr-banner {
+    display: none; margin-top: 8px; padding: 10px 16px; border-radius: 18px;
+    font-size: 13px; line-height: 1.4; color: var(--text-main);
+  }
+  #qr-banner.active { display: block; }
+  #nav-gate-link {
+    display: none; margin-top: 12px; padding: 10px; border-radius: 20px; text-align: center;
+    background: rgba(66, 133, 244, 0.15); color: #8ab4f8; font-size: 14px; font-weight: 600; text-decoration: none;
+  }
+
+  /* --- NAVIGATION MODE (Google Maps style) --- */
+  #btn-nav-start {
+    display: none; width: 100%; height: 48px; margin-top: 14px;
+    background: var(--accent-blue); color: white; border: none; border-radius: 24px;
+    font-size: 16px; font-weight: 600; cursor: pointer;
+    align-items: center; justify-content: center; gap: 8px;
+  }
+  #btn-nav-start svg { width: 20px; height: 20px; fill: currentColor; }
+  .summary-time { color: #81c995; }
+  .summary-distance { color: var(--text-muted); font-weight: 400; font-size: 16px; }
+
+  #nav-banner-wrap, #nav-bottom, #btn-recenter, #nav-active-steps { display: none; }
+  body.navigating #nav-banner-wrap { display: block; }
+  body.navigating #nav-bottom { display: flex; }
+  body.navigating #search-container,
+  body.navigating #nav-panel,
+  body.navigating #bottom-sheet,
+  body.navigating #view-toggle-wrapper,
+  body.navigating #joystick-zone,
+  body.navigating .fab-group { display: none !important; }
+
+  #nav-banner-wrap { position: absolute; top: 16px; left: 12px; right: 12px; z-index: 120; }
+  #nav-banner {
+    background: #0b6e3a; color: white; border-radius: 16px; padding: 14px 12px 14px 16px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  }
+  .banner-row { display: flex; align-items: center; gap: 14px; }
+  #banner-icon { width: 44px; height: 44px; flex-shrink: 0; }
+  #banner-icon svg, #banner-then-icon svg { width: 100%; height: 100%; }
+  .banner-text { flex: 1; min-width: 0; }
+  #banner-distance { font-size: 28px; font-weight: 700; line-height: 1.1; }
+  #banner-distance:empty { display: none; }
+  #banner-instruction { font-size: 17px; font-weight: 500; line-height: 1.3; margin-top: 2px; overflow-wrap: anywhere; }
+  .banner-btn {
+    width: 44px; height: 44px; flex-shrink: 0; border: none; border-radius: 50%; cursor: pointer;
+    background: rgba(255, 255, 255, 0.15); color: white; display: flex; align-items: center; justify-content: center;
+  }
+  .banner-btn svg { width: 22px; height: 22px; fill: currentColor; }
+  #banner-then {
+    display: none; align-items: center; gap: 8px; width: max-content; max-width: 100%;
+    margin: 0 0 0 12px; padding: 6px 14px; border-radius: 0 0 12px 12px;
+    background: #0a5530; color: white; font-size: 14px; font-weight: 500;
+  }
+  #banner-then.active { display: flex; }
+  #banner-then-icon { width: 22px; height: 22px; flex-shrink: 0; }
+  #banner-status {
+    margin-top: 8px; padding: 8px 14px; border-radius: 12px; font-size: 13px; line-height: 1.4;
+    background: rgba(28, 30, 38, 0.92); color: #fdd663;
+  }
+  #banner-status:empty { display: none; }
+  #banner-preview-controls { display: none; align-items: center; gap: 8px; margin-top: 12px; }
+  body.nav-preview #banner-preview-controls { display: flex; }
+  #banner-preview-controls button {
+    flex: 1; height: 40px; border: none; border-radius: 20px; cursor: pointer;
+    background: rgba(255, 255, 255, 0.18); color: white; font-size: 14px; font-weight: 600;
+  }
+  #banner-preview-controls button:disabled { opacity: 0.4; cursor: default; }
+  #banner-step-count { font-size: 13px; min-width: 52px; text-align: center; }
+
+  #nav-bottom {
+    position: absolute; left: 12px; right: 12px; bottom: 76px; z-index: 120;
+    align-items: center; gap: 12px; padding: 12px; border-radius: 24px;
+  }
+  #nav-eta { flex: 1; min-width: 0; text-align: center; cursor: pointer; }
+  #nav-eta-time { font-size: 22px; font-weight: 700; color: #81c995; }
+  #nav-eta-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+  #btn-nav-exit {
+    height: 44px; padding: 0 18px; border: none; border-radius: 22px; cursor: pointer;
+    background: #d93025; color: white; font-size: 15px; font-weight: 600;
+  }
+  #btn-nav-list {
+    width: 44px; height: 44px; border: 1px solid var(--glass-border); border-radius: 50%; cursor: pointer;
+    background: rgba(255, 255, 255, 0.06); color: var(--text-main); display: flex; align-items: center; justify-content: center;
+  }
+  #btn-nav-list svg { width: 22px; height: 22px; fill: currentColor; }
+  body.navigating #nav-active-steps.open { display: block; }
+  #nav-active-steps {
+    position: absolute; left: 12px; right: 12px; bottom: 152px; z-index: 119;
+    max-height: 45vh; overflow-y: auto; border-radius: 20px; padding: 8px;
+  }
+  #nav-active-steps ol { list-style: none; }
+  #nav-active-steps li {
+    display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 12px;
+    font-size: 14px; line-height: 1.35; color: var(--text-muted);
+  }
+  #nav-active-steps li.current { background: rgba(66, 133, 244, 0.15); color: var(--text-main); }
+  #nav-active-steps li .step-icon { width: 24px; height: 24px; flex-shrink: 0; color: var(--text-main); }
+  body.navigating #btn-recenter.visible { display: flex; }
+  #btn-recenter {
+    position: absolute; left: 16px; bottom: 160px; z-index: 118; height: 44px; padding: 0 18px;
+    align-items: center; gap: 8px; border: none; border-radius: 22px; cursor: pointer;
+    background: var(--glass-bg); color: #8ab4f8; font-size: 15px; font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+  #btn-recenter svg { width: 20px; height: 20px; fill: currentColor; }
+
+  /* --- PATH EDITOR (index.html?edit=paths) --- */
+  #path-editor { display: none; position: absolute; top: 24px; left: 16px; right: 16px; z-index: 110; border-radius: 20px; padding: 14px; }
+  #path-editor.active { display: block; }
+  #path-editor p { font-size: 13px; line-height: 1.4; color: var(--text-muted); margin-bottom: 10px; }
+  #path-editor .editor-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  #path-editor button {
+    flex: 1 1 auto; min-height: 38px; padding: 0 12px; border-radius: 19px; cursor: pointer;
+    border: 1px solid var(--glass-border); background: rgba(255,255,255,0.06); color: var(--text-main); font-size: 13px;
+  }
+  #path-editor #btn-edit-download { background: var(--accent-blue); border-color: var(--accent-blue); color: white; }
+  /* ===================== POLISH, PWA AND DEVICE SUPPORT ===================== */
+  :root {
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+  }
+  html, body { height: 100%; height: 100dvh; }
+  button, a, input, label { touch-action: manipulation; }
+  button { font: inherit; }
+  input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+
+  /* Notched phones and landscape: keep controls out of the camera cut-out and home bar. */
+  #search-container, #nav-panel { top: calc(24px + var(--safe-top)); left: calc(16px + var(--safe-left)); right: calc(16px + var(--safe-right)); }
+  #nav-banner-wrap { top: calc(16px + var(--safe-top)); left: calc(12px + var(--safe-left)); right: calc(12px + var(--safe-right)); }
+  .fab-top { top: calc(86px + var(--safe-top)); right: calc(16px + var(--safe-right)); }
+  .fab-bottom { right: calc(16px + var(--safe-right)); }
+  #footer-bar { padding-bottom: calc(6px + var(--safe-bottom)); padding-left: calc(16px + var(--safe-left)); padding-right: calc(16px + var(--safe-right)); }
+  #view-toggle-wrapper { bottom: calc(76px + var(--safe-bottom)); }
+  #bottom-sheet.open { bottom: calc(152px + var(--safe-bottom)); }
+  #nav-bottom { bottom: calc(76px + var(--safe-bottom)); }
+
+  /* Keyboard users can see where they are. */
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid #8ab4f8; outline-offset: 2px; }
+  .footer-link { color: rgba(255, 255, 255, 0.75); pointer-events: auto; text-underline-offset: 2px; }
+
+  /* Tap feedback: everything you can press gives a little. */
+  .fab, .icon-btn, .toggle-btn, .btn-collapse, #btn-directions, #btn-share, #btn-nav-start, #btn-nav-exit, #btn-nav-list,
+  .banner-btn, #btn-recenter, .category-item, .result-item, .slider-card, .featured-category-card,
+  #consent-banner button, #welcome-card button, #about-dialog button {
+    transition: transform 0.16s var(--ease-out), background-color 0.2s ease, opacity 0.2s ease;
+  }
+  .fab:active, .icon-btn:active, .toggle-btn:active, .btn-collapse:active, #btn-directions:active, #btn-share:active, #btn-nav-start:active,
+  #btn-nav-exit:active, #btn-nav-list:active, .banner-btn:active, #btn-recenter:active,
+  #consent-banner button:active, #welcome-card button:active, #about-dialog button:active { transform: scale(0.95); }
+  .category-item:active, .result-item:active { background: rgba(255, 255, 255, 0.06); }
+  @media (hover: hover) {
+    .fab:hover, .icon-btn:hover { background-color: rgba(255, 255, 255, 0.08); }
+    .result-item:hover, .category-item:hover { background: rgba(255, 255, 255, 0.04); }
+  }
+  .fab svg { width: 20px; height: 20px; fill: currentColor; }
+  #btn-about { color: var(--text-main); }
+
+  /* Entrances */
+  @keyframes fadeDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-24px); } to { opacity: 1; transform: none; } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+  @keyframes popIn { from { opacity: 0; transform: scale(0.94) translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes bannerSwap { from { opacity: 0.2; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+  #suggestions.active, #nav-suggestions.active { animation: fadeDown 0.22s var(--ease-out); }
+  #suggestions.active > *, #nav-suggestions.active > * { animation: fadeUp 0.28s var(--ease-out) both; }
+  #suggestions.active > *:nth-child(2), #nav-suggestions.active > *:nth-child(2) { animation-delay: 0.02s; }
+  #suggestions.active > *:nth-child(3), #nav-suggestions.active > *:nth-child(3) { animation-delay: 0.04s; }
+  #suggestions.active > *:nth-child(4), #nav-suggestions.active > *:nth-child(4) { animation-delay: 0.06s; }
+  #suggestions.active > *:nth-child(5), #nav-suggestions.active > *:nth-child(5) { animation-delay: 0.08s; }
+  #suggestions.active > *:nth-child(n+6), #nav-suggestions.active > *:nth-child(n+6) { animation-delay: 0.1s; }
+  #nav-panel.active { animation: fadeDown 0.26s var(--ease-out); }
+  body.navigating #nav-banner-wrap { animation: slideDown 0.38s var(--ease-out); }
+  body.navigating #nav-bottom { animation: slideUp 0.38s var(--ease-out); }
+  #nav-banner.swap .banner-row { animation: bannerSwap 0.3s var(--ease-out); }
+  body.navigating #nav-active-steps.open { animation: fadeUp 0.24s var(--ease-out); }
+  #bottom-sheet { transition: bottom 0.45s var(--ease-out); }
+  .fab-group { animation: fadeUp 0.5s var(--ease-out) both; }
+
+  /* Loading progress */
+  #loading-progress {
+    width: min(240px, 60vw); height: 4px; margin-top: 28px; border-radius: 2px; overflow: hidden;
+    background: rgba(255, 255, 255, 0.1); opacity: 0; animation: subtitleFadeIn 0.5s ease-out 0.7s forwards;
+  }
+  #loading-progress-bar {
+    width: 100%; height: 100%; border-radius: 2px; background: linear-gradient(90deg, #4285f4, #8ab4f8);
+    transform: scaleX(0.04); transform-origin: left center; transition: transform 0.3s var(--ease-out);
+  }
+  #loading-status { margin-top: 12px; font-size: 13px; color: rgba(255, 255, 255, 0.45); opacity: 0; animation: subtitleFadeIn 0.5s ease-out 0.7s forwards; }
+
+  /* Fatal error */
+  #fatal-error {
+    position: fixed; inset: 0; z-index: 100001; display: flex; align-items: center; justify-content: center;
+    padding: 24px; background: var(--bg-dark); text-align: center;
+  }
+  #fatal-error[hidden] { display: none; }
+  .fatal-card { max-width: 380px; animation: popIn 0.4s var(--ease-out); }
+  .fatal-card svg { width: 64px; height: 64px; fill: #8ab4f8; margin-bottom: 16px; }
+  .fatal-card h1 { color: var(--text-main); font-size: 22px; margin-bottom: 8px; }
+  .fatal-card p { color: var(--text-muted); line-height: 1.5; margin-bottom: 20px; }
+  .fatal-card button {
+    min-height: 48px; padding: 0 24px; border: none; border-radius: 24px; cursor: pointer;
+    background: var(--accent-blue); color: white; font-size: 16px; font-weight: 600;
+  }
+
+  /* Consent banner */
+  #consent-banner {
+    position: absolute; z-index: 130; left: calc(12px + var(--safe-left)); right: calc(12px + var(--safe-right));
+    bottom: calc(76px + var(--safe-bottom)); max-width: 520px; margin: 0 auto; padding: 16px; border-radius: 20px;
+    background: #1f2129; box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.45); animation: slideUp 0.45s var(--ease-out);
+  }
+  #consent-banner[hidden] { display: none; }
+  #consent-banner p { color: var(--text-muted); font-size: 14px; line-height: 1.5; }
+  #consent-banner p strong { color: var(--text-main); }
+  #consent-banner a { color: #8ab4f8; }
+  .consent-actions, .welcome-actions { display: flex; gap: 10px; margin-top: 14px; }
+  .consent-actions button, .welcome-actions button {
+    flex: 1; min-height: 44px; border-radius: 22px; cursor: pointer; font-size: 15px; font-weight: 600;
+    border: 1px solid var(--glass-border); background: rgba(255, 255, 255, 0.06); color: var(--text-main);
+  }
+  #btn-consent-allow, #btn-welcome-tour { background: var(--accent-blue); border-color: var(--accent-blue); color: white; }
+
+  /* Welcome card */
+  #welcome-card {
+    position: absolute; z-index: 125; left: calc(16px + var(--safe-left)); right: calc(16px + var(--safe-right));
+    top: 50%; max-width: 400px; margin: 0 auto; padding: 24px 20px 20px; border-radius: 24px; text-align: center; background: #1f2129;
+    transform: translateY(-50%); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+  #welcome-card:not([hidden]) { animation: welcomeIn 0.5s var(--ease-spring); }
+  @keyframes welcomeIn { from { opacity: 0; transform: translateY(-46%) scale(0.92); } to { opacity: 1; transform: translateY(-50%) scale(1); } }
+  #welcome-card[hidden] { display: none; }
+  #welcome-card .welcome-mark { width: 56px; height: 56px; margin-bottom: 10px; }
+  #welcome-card h2 { color: var(--text-main); font-size: 21px; line-height: 1.25; margin-bottom: 8px; }
+  #welcome-card p { color: var(--text-muted); font-size: 15px; line-height: 1.5; }
+
+  /* About dialog */
+  #about-dialog {
+    width: min(480px, calc(100vw - 24px)); max-height: min(86vh, 760px); margin: auto; padding: 0; overflow: hidden;
+    border: 1px solid var(--glass-border); border-radius: 24px; background: #1a1c23; color: var(--text-main);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+  }
+  #about-dialog[open] { display: flex; flex-direction: column; animation: popIn 0.32s var(--ease-out); }
+  #about-dialog::backdrop { background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+  .about-head { display: flex; align-items: center; gap: 14px; padding: 18px 16px 14px 20px; border-bottom: 1px solid var(--glass-border); }
+  .about-head > div { flex: 1; min-width: 0; }
+  .about-head h2 { font-size: 19px; line-height: 1.2; }
+  .about-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+  .about-close {
+    width: 40px; height: 40px; flex-shrink: 0; border: none; border-radius: 50%; cursor: pointer;
+    background: rgba(255, 255, 255, 0.08); color: var(--text-main); display: flex; align-items: center; justify-content: center;
+  }
+  .about-close svg { width: 20px; height: 20px; fill: currentColor; }
+  .about-body { overflow-y: auto; padding: 4px 20px 20px; overscroll-behavior: contain; }
+  .about-body section { padding-top: 18px; }
+  .about-body h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.6px; color: #8ab4f8; margin-bottom: 8px; }
+  .about-body p { font-size: 15px; line-height: 1.55; color: #c9ccd1; }
+  .feature-list { list-style: none; display: grid; gap: 4px; }
+  .feature-list li { display: flex; gap: 14px; align-items: flex-start; padding: 10px; border-radius: 14px; animation: fadeUp 0.4s var(--ease-out) both; }
+  .feature-list li:nth-child(2) { animation-delay: 0.04s; }
+  .feature-list li:nth-child(3) { animation-delay: 0.08s; }
+  .feature-list li:nth-child(4) { animation-delay: 0.12s; }
+  .feature-list li:nth-child(5) { animation-delay: 0.16s; }
+  .feature-list li:nth-child(6) { animation-delay: 0.2s; }
+  .feature-list li:hover { background: rgba(255, 255, 255, 0.03); }
+  .feature-icon {
+    width: 36px; height: 36px; flex-shrink: 0; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    background: rgba(66, 133, 244, 0.15); color: #8ab4f8;
+  }
+  .feature-icon svg { width: 20px; height: 20px; fill: currentColor; }
+  .feature-list strong { display: block; font-size: 15px; color: var(--text-main); }
+  .feature-list span { font-size: 13px; line-height: 1.45; color: var(--text-muted); }
+  .about-actions { display: grid; gap: 10px; }
+  .about-actions > button {
+    display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; border-radius: 23px; cursor: pointer;
+    border: 1px solid var(--glass-border); background: rgba(255, 255, 255, 0.06); color: var(--text-main); font-size: 15px; font-weight: 600;
+  }
+  .about-actions > button svg { width: 20px; height: 20px; fill: currentColor; }
+  #btn-install { background: var(--accent-blue); border-color: var(--accent-blue); color: white; }
+  #btn-install[hidden], #install-ios-hint[hidden] { display: none; }
+  #install-ios-hint { font-size: 14px; text-align: center; }
+  .switch-row {
+    display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; cursor: pointer;
+    background: rgba(255, 255, 255, 0.04); border: 1px solid var(--glass-border);
+  }
+  .switch-row > span { flex: 1; }
+  .switch-row strong { display: block; font-size: 15px; }
+  .switch-row small { font-size: 12px; color: var(--text-muted); }
+  .switch-row input {
+    appearance: none; -webkit-appearance: none; width: 46px; height: 28px; border-radius: 14px; flex-shrink: 0; cursor: pointer;
+    background: #3c4043; position: relative; transition: background-color 0.2s ease;
+  }
+  .switch-row input::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: white;
+    transition: transform 0.22s var(--ease-spring);
+  }
+  .switch-row input:checked { background: var(--accent-blue); }
+  .switch-row input:checked::after { transform: translateX(18px); }
+  .about-links { margin-top: 20px; text-align: center; font-size: 14px; }
+  .about-links a { color: #8ab4f8; }
+  .about-credits { margin-top: 8px; text-align: center; font-size: 12px !important; color: var(--text-muted) !important; }
+
+  /* Toasts */
+  #toast-region {
+    position: fixed; z-index: 100002; left: 0; right: 0; bottom: calc(150px + var(--safe-bottom));
+    display: flex; flex-direction: column-reverse; align-items: center; gap: 8px; pointer-events: none; padding: 0 16px;
+  }
+  .toast {
+    display: flex; align-items: center; gap: 12px; max-width: 440px; padding: 10px 10px 10px 16px; border-radius: 16px;
+    background: #2a2d36; color: var(--text-main); font-size: 14px; line-height: 1.4; pointer-events: auto;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45); animation: fadeUp 0.3s var(--ease-out);
+  }
+  .toast.leaving { opacity: 0; transform: translateY(6px); transition: opacity 0.25s ease, transform 0.25s ease; }
+  .toast button {
+    flex-shrink: 0; min-height: 36px; padding: 0 14px; border: none; border-radius: 18px; cursor: pointer;
+    background: rgba(138, 180, 248, 0.16); color: #8ab4f8; font-weight: 600; font-size: 14px;
+  }
+
+  /* Guided tour (driver.js), matched to the map's dark glass look */
+  .driver-popover.campus-tour {
+    background: #1f2129; color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 18px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55); max-width: min(320px, calc(100vw - 32px)); padding: 18px;
+    font-family: var(--font);
+  }
+  .driver-popover.campus-tour .driver-popover-title { font-size: 17px; font-weight: 600; color: var(--text-main); }
+  .driver-popover.campus-tour .driver-popover-description { font-size: 14px; line-height: 1.5; color: #c9ccd1; margin-top: 6px; }
+  .driver-popover.campus-tour .driver-popover-progress-text { color: var(--text-muted); font-size: 12px; }
+  .driver-popover.campus-tour .driver-popover-footer button {
+    text-shadow: none; border: none; border-radius: 16px; padding: 8px 14px; font-size: 14px; font-weight: 600;
+    background: rgba(255, 255, 255, 0.08); color: var(--text-main);
+  }
+  .driver-popover.campus-tour .driver-popover-footer .driver-popover-next-btn { background: var(--accent-blue); color: white; }
+  .driver-popover.campus-tour .driver-popover-close-btn { color: var(--text-muted); }
+  .driver-popover.campus-tour .driver-popover-arrow { border-color: #1f2129; }
+  .driver-popover.campus-tour .driver-popover-arrow-side-left { border-right-color: transparent; border-top-color: transparent; border-bottom-color: transparent; }
+  .driver-popover.campus-tour .driver-popover-arrow-side-right { border-left-color: transparent; border-top-color: transparent; border-bottom-color: transparent; }
+  .driver-popover.campus-tour .driver-popover-arrow-side-top { border-right-color: transparent; border-left-color: transparent; border-bottom-color: transparent; }
+  .driver-popover.campus-tour .driver-popover-arrow-side-bottom { border-right-color: transparent; border-left-color: transparent; border-top-color: transparent; }
+
+  /* Larger phones in landscape and tablets: keep panels a readable width. */
+  @media (min-width: 720px) {
+    #search-container, #nav-panel { right: auto; width: 420px; }
+    #nav-banner-wrap { right: auto; width: 440px; }
+    #nav-bottom { left: calc(12px + var(--safe-left)); right: auto; width: 440px; }
+    #nav-active-steps { right: auto; width: 440px; }
+  }
+  /* Short landscape screens: tighten the bottom area. */
+  @media (max-height: 480px) and (orientation: landscape) {
+    #loading-club { width: 180px; }
+    #bottom-sheet.open { bottom: calc(84px + var(--safe-bottom)); max-height: 60vh; overflow-y: auto; }
+    #view-toggle-wrapper { bottom: calc(14px + var(--safe-bottom)); }
+    #footer-bar { display: none; }
+    .fab-top { top: calc(16px + var(--safe-top)); flex-direction: row; }
+  }
+
+  /* Respect people who switch off motion. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+    .scroll-text-track { animation: none !important; }
+  }
 </style>
 </head>
 <body>
 <div id="loading-screen">
-    <a href="https://www.instagram.com/dotclub_ibs/" target="_blank" style="display: inline-block; z-index: 100000; position: relative;">
-      <img src="assets/dot.png" alt="DOT Club Logo" id="loading-club">
+    <a href="https://www.instagram.com/dotclub_ibs/" target="_blank" rel="noopener noreferrer" style="display: inline-block; z-index: 100000; position: relative;">
+      <img src="assets/dot.png" alt="Dot Club" id="loading-club" width="300" height="226">
     </a>
     <div id="loading-subtitle">Official techno-managerial club of IBS Hyderabad</div>
+    <div id="loading-brand" class="cc-wordmark">
+      <svg class="cc-mark" viewBox="12 16 72 72" aria-hidden="true"><g fill="#8ab4f8"><circle cx="21.4" cy="76.2" r="2.7"/><circle cx="25.3" cy="74.1" r="2.7"/><circle cx="30.8" cy="74.8" r="2.7"/><circle cx="37.3" cy="77.1" r="2.7"/><circle cx="44.1" cy="80.2" r="2.7"/><circle cx="50.5" cy="82.9" r="2.7"/><circle cx="55.8" cy="84.3" r="2.7"/></g><circle cx="20" cy="82" r="5.5" fill="#fff"/><circle cx="20" cy="82" r="3" fill="#1a73e8"/><circle cx="60" cy="40" r="22" fill="#4285f4"/><path d="M41.74 52.1H78.26L60 79.16z" fill="#4285f4"/><circle cx="60" cy="40" r="9.24" fill="#fff"/></svg>
+      <span>Campus <b>Connect</b></span>
+    </div>
+    <div id="loading-progress" role="progressbar" aria-label="Loading the campus map" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div id="loading-progress-bar"></div>
+    </div>
+    <div id="loading-status">Loading the campus…</div>
+</div>
+<div id="fatal-error" role="alert" hidden>
+  <div class="fatal-card">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm1 12h-2v-2h2v2zm0-4h-2V6h2v4z"/></svg>
+    <h1 id="fatal-title">The map couldn't load</h1>
+    <p id="fatal-message">Check your connection and try again.</p>
+    <button type="button" id="btn-fatal-retry">Try again</button>
+  </div>
 </div>
 <div id="setup-overlay" style="display:none;">
   <!-- Hidden - files load automatically -->
@@ -539,7 +1026,7 @@
         <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
       </button>
       <div id="search-wrapper">
-        <input type="text" id="search-input" placeholder=" " autocomplete="off">
+        <input type="search" id="search-input" placeholder=" " autocomplete="off" enterkeyhint="search" aria-label="Search campus places">
         
         <div id="animated-placeholder">
           <span class="static-text">Search</span>
@@ -558,15 +1045,90 @@
           </div>
         </div>
       </div>
-      <button class="icon-btn" id="btn-clear-search" style="display:none;">
+      <button class="icon-btn" id="btn-voice-search" type="button" hidden aria-label="Search by voice" aria-pressed="false">
+        <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-clear-search" style="display:none;" aria-label="Clear search">
         <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
       </button>
       <div class="divider"></div>
-      <button class="icon-btn" id="btn-show-categories">
+      <button class="icon-btn" id="btn-show-categories" aria-label="Browse categories">
         <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
       </button>
     </div>
     <div id="suggestions"></div>
+    <div id="qr-banner" class="glass-panel" role="status"></div>
+  </div>
+
+  <div id="nav-panel">
+    <div id="nav-fields" class="glass-panel">
+      <div class="nav-row">
+        <span class="nav-label">From</span>
+        <input type="text" id="nav-from" placeholder="Choose a starting point" autocomplete="off" aria-label="Starting point">
+        <button class="icon-btn" id="btn-nav-gps" aria-label="Use my location">
+          <svg viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
+        </button>
+        <button class="icon-btn" id="btn-nav-close" aria-label="Close directions">
+          <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+      <div class="nav-row">
+        <span class="nav-label">To</span>
+        <div id="nav-to"></div>
+      </div>
+    </div>
+    <div id="nav-suggestions"></div>
+  </div>
+
+  <div id="nav-banner-wrap">
+    <div id="nav-banner">
+      <div class="banner-row">
+        <div id="banner-icon" aria-hidden="true"></div>
+        <div class="banner-text" role="status" aria-live="polite">
+          <div id="banner-distance"></div>
+          <div id="banner-instruction"></div>
+        </div>
+        <button class="banner-btn" id="btn-voice" aria-label="Voice directions on" aria-pressed="true">
+          <svg id="icon-voice" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+        </button>
+      </div>
+      <div id="banner-preview-controls">
+        <button id="btn-step-prev">Back</button>
+        <span id="banner-step-count"></span>
+        <button id="btn-step-next">Next</button>
+      </div>
+    </div>
+    <div id="banner-then"><span>Then</span><span id="banner-then-icon" aria-hidden="true"></span><span id="banner-then-text"></span></div>
+    <div id="banner-status" role="status"></div>
+  </div>
+
+  <button id="btn-recenter">
+    <svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+    Re-centre
+  </button>
+
+  <div id="nav-active-steps" class="glass-panel"><ol id="nav-active-steps-list"></ol></div>
+
+  <div id="nav-bottom" class="glass-panel">
+    <button id="btn-nav-exit">Exit</button>
+    <div id="nav-eta" role="status">
+      <div id="nav-eta-time"></div>
+      <div id="nav-eta-sub"></div>
+    </div>
+    <button id="btn-nav-list" aria-label="Show all steps" aria-expanded="false">
+      <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+    </button>
+  </div>
+
+  <div id="path-editor" class="glass-panel">
+    <p>Tap the map to add path points. Tap a point or path to join to it. With Stairs on, new links are stairs and tapping a path marks it (red).</p>
+    <div class="editor-actions">
+      <button id="btn-edit-new">New path</button>
+      <button id="btn-edit-undo">Undo</button>
+      <button id="btn-edit-delete">Delete point</button>
+      <button id="btn-edit-stairs" aria-pressed="false">Stairs: off</button>
+      <button id="btn-edit-download">Download paths.json</button>
+    </div>
   </div>
 
   <div id="joystick-zone">
@@ -578,7 +1140,7 @@
   </div>
 
   <div class="fab-group fab-top">
-  <button class="fab glass-panel" id="btn-compass" style="position: relative;">
+  <button class="fab glass-panel" id="btn-compass" style="position: relative;" aria-label="Reset the view to north">
     
     <svg id="compass-arrow" viewBox="0 0 24 24" style="position: absolute; width: 28px; height: 28px; transition: transform 0.1s ease-out;">
       <path d="M12 2 L9 12 L12 12 Z" fill="#d32f2f"/> <path d="M12 2 L12 12 L15 12 Z" fill="#f44336"/> <path d="M12 22 L9 12 L12 12 Z" fill="#bdbdbd"/> <path d="M12 22 L12 12 L15 12 Z" fill="#ffffff"/> </svg>
@@ -586,16 +1148,19 @@
     <div style="position: absolute; background: var(--bg-dark); width: 14px; height: 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 2; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 2px 4px rgba(0,0,0,0.5);">
       <span style="font-size: 10px; font-weight: 800; color: var(--text-main); margin-top: 1px;">N</span>
     </div>
-    
+
+  </button>
+  <button class="fab glass-panel" id="btn-about" aria-label="About, install and settings" aria-haspopup="dialog">
+    <svg viewBox="0 0 24 24"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
   </button>
 </div>
 
 <div class="fab-group fab-bottom">
   <div class="zoom-group">
-    <button class="fab" id="btn-zoom-in">
+    <button class="fab" id="btn-zoom-in" aria-label="Zoom in">
       <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
     </button>
-    <button class="fab" id="btn-zoom-out">
+    <button class="fab" id="btn-zoom-out" aria-label="Zoom out">
       <svg viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>
     </button>
   </div>
@@ -603,7 +1168,7 @@
 
 <div id="bottom-sheet" class="glass-panel">
     <div class="sheet-header">
-      <button id="btn-collapse-sheet" class="btn-collapse">
+      <button id="btn-collapse-sheet" class="btn-collapse" aria-label="Collapse or expand details">
         <svg id="icon-collapse" viewBox="0 0 24 24"><path d="M12 15.5l-6-6h12z"/></svg>
       </button>
       
@@ -612,7 +1177,7 @@
         <div class="sheet-desc" id="sheet-desc">Location Description</div>
       </div>
       
-      <button id="btn-close-sheet" class="btn-collapse">
+      <button id="btn-close-sheet" class="btn-collapse" aria-label="Close">
         <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
       </button>
     </div>
@@ -635,7 +1200,39 @@
           <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
         </div>
       </div>
-      
+
+      <div id="sheet-actions">
+        <button id="btn-directions">
+          <svg viewBox="0 0 24 24"><path d="M21.71 11.29l-9-9a.996.996 0 0 0-1.41 0l-9 9a.996.996 0 0 0 0 1.41l9 9c.39.39 1.02.39 1.41 0l9-9a.996.996 0 0 0 0-1.41zM14 14.5V12h-4v3H8v-4c0-.55.45-1 1-1h5V7.5l3.5 3.5-3.5 3.5z"/></svg>
+          Directions
+        </button>
+        <button id="btn-share" aria-label="Share this place">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11A2.99 2.99 0 0 0 21 5a3 3 0 0 0-6 0c0 .24.04.47.09.7L8.04 9.81A2.99 2.99 0 0 0 3 12a3 3 0 0 0 5.04 2.19l7.12 4.16c-.05.21-.08.43-.08.65A2.92 2.92 0 1 0 18 16.08z"/></svg>
+          Share
+        </button>
+      </div>
+
+      <div id="nav-section">
+        <div id="nav-summary"></div>
+        <div id="nav-next" role="status"></div>
+        <div class="nav-text" id="nav-status" role="status"></div>
+        <div class="nav-text" id="nav-floor"></div>
+        <div class="nav-text" id="nav-note"></div>
+        <button id="btn-nav-start">
+          <svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+          <span id="btn-nav-start-label">Start</span>
+        </button>
+        <label id="nav-stepfree-row">
+          <input type="checkbox" id="nav-stepfree">
+          Avoid stairs
+        </label>
+        <details id="nav-steps-wrap">
+          <summary id="nav-steps-title">Steps</summary>
+          <ol id="nav-steps"></ol>
+        </details>
+        <a id="nav-gate-link" target="_blank" rel="noopener noreferrer">Directions to the Main Gate in Google Maps</a>
+      </div>
+
     </div>
   </div>
 
@@ -654,20 +1251,111 @@
 
 </div>
 
+<div id="consent-banner" class="glass-panel" role="region" aria-label="Analytics choice" hidden>
+  <p><strong>Can we count visits?</strong> We use Google Analytics to see which places people search for, so we know what to fix. It stays off unless you say yes, and the map works the same either way. <a href="legal.html#consent">Details</a></p>
+  <div class="consent-actions">
+    <button type="button" id="btn-consent-deny">No thanks</button>
+    <button type="button" id="btn-consent-allow">Allow</button>
+  </div>
+</div>
+
+<div id="welcome-card" class="glass-panel" role="dialog" aria-modal="false" aria-labelledby="welcome-title" hidden>
+  <svg class="cc-mark welcome-mark" viewBox="12 16 72 72" aria-hidden="true"><g fill="#8ab4f8"><circle cx="21.4" cy="76.2" r="2.7"/><circle cx="25.3" cy="74.1" r="2.7"/><circle cx="30.8" cy="74.8" r="2.7"/><circle cx="37.3" cy="77.1" r="2.7"/><circle cx="44.1" cy="80.2" r="2.7"/><circle cx="50.5" cy="82.9" r="2.7"/><circle cx="55.8" cy="84.3" r="2.7"/></g><circle cx="20" cy="82" r="5.5" fill="#fff"/><circle cx="20" cy="82" r="3" fill="#1a73e8"/><circle cx="60" cy="40" r="22" fill="#4285f4"/><path d="M41.74 52.1H78.26L60 79.16z" fill="#4285f4"/><circle cx="60" cy="40" r="9.24" fill="#fff"/></svg>
+  <h2 id="welcome-title">Welcome to Campus Connect</h2>
+  <p>Find your way around IFHE. Search any classroom, hostel, canteen or office, then follow walking directions to it. Want a 30-second tour first?</p>
+  <div class="welcome-actions">
+    <button type="button" id="btn-welcome-skip">I'll explore</button>
+    <button type="button" id="btn-welcome-tour">Show me around</button>
+  </div>
+</div>
+
+<dialog id="about-dialog" aria-labelledby="about-title">
+  <div class="about-head">
+    <div>
+      <h2 id="about-title" class="cc-wordmark" aria-label="About Campus Connect">
+        <svg class="cc-mark" viewBox="12 16 72 72" aria-hidden="true"><g fill="#8ab4f8"><circle cx="21.4" cy="76.2" r="2.7"/><circle cx="25.3" cy="74.1" r="2.7"/><circle cx="30.8" cy="74.8" r="2.7"/><circle cx="37.3" cy="77.1" r="2.7"/><circle cx="44.1" cy="80.2" r="2.7"/><circle cx="50.5" cy="82.9" r="2.7"/><circle cx="55.8" cy="84.3" r="2.7"/></g><circle cx="20" cy="82" r="5.5" fill="#fff"/><circle cx="20" cy="82" r="3" fill="#1a73e8"/><circle cx="60" cy="40" r="22" fill="#4285f4"/><path d="M41.74 52.1H78.26L60 79.16z" fill="#4285f4"/><circle cx="60" cy="40" r="9.24" fill="#fff"/></svg>
+        <span aria-hidden="true">Campus <b>Connect</b></span>
+      </h2>
+      <p class="about-sub">The IFHE Hyderabad campus map, made by Dot Club, IBS Hyderabad</p>
+    </div>
+    <button type="button" class="about-close" id="btn-about-close" aria-label="Close">
+      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
+  </div>
+
+  <div class="about-body">
+    <section>
+      <h3>Who we are</h3>
+      <p>We're Dot Club, the techno-managerial club of IBS Hyderabad. The campus is big, a lot of the blocks look alike, and asking a senior where LT-K is gets old fast. So we built a map.</p>
+    </section>
+
+    <section>
+      <h3>What it does</h3>
+      <p>Search any of <span id="about-place-count">the</span> places on campus, from lecture theatres and faculty cabins to the laundry and the clinic. Tap one and the map shows you where it is. Tap Directions and it walks you there.</p>
+    </section>
+
+    <section>
+      <h3>What's inside</h3>
+      <ul class="feature-list">
+        <li><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></span><div><strong>Search and categories</strong><span>Type a name, or browse food, hostels, academics and sports.</span></div></li>
+        <li><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M21 16.5c0 .38-.21.71-.53.88l-7.9 4.44c-.16.12-.36.18-.57.18s-.41-.06-.57-.18l-7.9-4.44A.991.991 0 0 1 3 16.5v-9c0-.38.21-.71.53-.88l7.9-4.44c.16-.12.36-.18.57-.18s.41.06.57.18l7.9 4.44c.32.17.53.5.53.88v9z"/></svg></span><div><strong>2D and 3D views</strong><span>Flat for finding your way, 3D for spotting the building.</span></div></li>
+        <li><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M21.71 11.29l-9-9a.996.996 0 0 0-1.41 0l-9 9a.996.996 0 0 0 0 1.41l9 9c.39.39 1.02.39 1.41 0l9-9a.996.996 0 0 0 0-1.41zM14 14.5V12h-4v3H8v-4c0-.55.45-1 1-1h5V7.5l3.5 3.5-3.5 3.5z"/></svg></span><div><strong>Walking directions</strong><span>Turn by turn, read out loud, with a step-free option.</span></div></li>
+        <li><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06z"/></svg></span><div><strong>Live location and compass</strong><span>Shows where you are and which way you face. Your location stays on your phone.</span></div></li>
+        <li><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4zm0 10h2v2h-2zm-6-6h2v2h-2zm2 2h2v2h-2zm-2 2h2v2h-2zm2 2h2v2h-2zm2-2h2v2h-2zm0-4h2v2h-2zm2 2h2v2h-2z"/></svg></span><div><strong>QR start points</strong><span>Scan a code on a wall to start directions from that spot, even indoors.</span></div></li>
+        <li><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg></span><div><strong>Pin and share a spot</strong><span>Long-press anywhere to drop a pin, or open a place, then tap Share to send it. Friends get the exact spot with directions.</span></div></li>
+        <li><span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg></span><div><strong>Works offline</strong><span>Open it once and it keeps working without internet.</span></div></li>
+      </ul>
+    </section>
+
+    <section class="about-actions">
+      <button type="button" id="btn-install" hidden>
+        <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        Install the app
+      </button>
+      <p id="install-ios-hint" hidden>To install on iPhone, tap <strong>Share</strong> and then <strong>Add to Home Screen</strong>.</p>
+      <button type="button" id="btn-replay-tour">
+        <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+        Take the tour again
+      </button>
+      <label class="switch-row">
+        <span>
+          <strong>Usage analytics</strong>
+          <small>Helps us see what to improve. Off unless you turn it on.</small>
+        </span>
+        <input type="checkbox" id="toggle-analytics" role="switch">
+      </label>
+    </section>
+
+    <p class="about-links">
+      <a href="legal.html">Privacy</a> · <a href="legal.html#cookies">Cookies</a> · <a href="legal.html#terms">Terms</a> · <a href="legal.html#security">Security</a>
+    </p>
+    <p class="about-credits">Road data © OpenStreetMap contributors. 3D map drawn with three.js.</p>
+  </div>
+</dialog>
+
+<div id="toast-region" aria-live="polite" aria-atomic="false"></div>
+
 <div id="footer-bar">
     <div class="footer-logo-row">
-      <a href="https://www.instagram.com/ibs_hyd_student_activities/" target="_blank" style="display: flex; align-items: center;">
-        <img src="assets/logo stroke.png" alt="College Logo" class="footer-logo">
+      <a href="https://www.instagram.com/ibs_hyd_student_activities/" target="_blank" rel="noopener noreferrer" style="display: flex; align-items: center;">
+        <img src="assets/logo-stroke-small.png" alt="IBS Hyderabad" class="footer-logo" width="48" height="32">
       </a>
-      <a href="https://www.instagram.com/dotclub_ibs/" target="_blank" style="display: flex; align-items: center;">
-        <img src="assets/dot.png" alt="Club Logo" class="footer-logo">
+      <span class="cc-wordmark footer-brand" aria-label="Campus Connect">
+        <svg class="cc-mark" viewBox="12 16 72 72" aria-hidden="true"><g fill="#8ab4f8"><circle cx="21.4" cy="76.2" r="2.7"/><circle cx="25.3" cy="74.1" r="2.7"/><circle cx="30.8" cy="74.8" r="2.7"/><circle cx="37.3" cy="77.1" r="2.7"/><circle cx="44.1" cy="80.2" r="2.7"/><circle cx="50.5" cy="82.9" r="2.7"/><circle cx="55.8" cy="84.3" r="2.7"/></g><circle cx="20" cy="82" r="5.5" fill="#fff"/><circle cx="20" cy="82" r="3" fill="#1a73e8"/><circle cx="60" cy="40" r="22" fill="#4285f4"/><path d="M41.74 52.1H78.26L60 79.16z" fill="#4285f4"/><circle cx="60" cy="40" r="9.24" fill="#fff"/></svg>
+        <span aria-hidden="true">Campus <b>Connect</b></span>
+      </span>
+      <a href="https://www.instagram.com/dotclub_ibs/" target="_blank" rel="noopener noreferrer" style="display: flex; align-items: center;">
+        <img src="assets/dot.png" alt="Dot Club" class="footer-logo" width="42" height="32">
       </a>
     </div>
     <div class="footer-text">
-      &copy; 2026, Dot Club, IBS Hyderabad. All Rights Reserved.
+      Campus Connect &copy; 2026, Dot Club, IBS Hyderabad. All Rights Reserved.<br>Roads &copy; OpenStreetMap contributors · <a href="legal.html" class="footer-link">Privacy &amp; terms</a>
     </div>
 </div>
 
+<!-- Tells browsers too old for the map (before 2023) to update, instead of a blank screen. -->
+<script src="js/compat.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js" integrity="sha384-BhR06AMz62Xn0o53z8itVS1vw4JslNckRFgOTa6/Dob0Agdmbbh8Dr9sDO2h18TO" crossorigin="anonymous"></script>
 <script type="importmap">
   {
     "imports": {
@@ -677,1547 +1365,6 @@
   }
 </script>
 
-<script type="module">
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-
-// --- STATE ---
-let glbFile, jsonFile, mapData;
-let scene, renderer, camera2D, camera3D, activeCamera, controls2D, controls3D;
-let worldGroup = new THREE.Group(); 
-let pubgLabelsGroup = new THREE.Group();
-let searchPinGroup = new THREE.Group();
-let modelBounds = null;
-let groundY = 0;
-
-let buildingMeshesMap = new Map(); 
-let originalMaterials = new Map();
-let activeHighlightMeshes = [];
-let aodSpritesMap = new Map(); 
-
-const FLY_ZOOM_2D = 8;
-const FLY_DIST_3D = 120;
-
-const defaultBuildingMat = new THREE.MeshPhysicalMaterial({ 
-  color: 0x8892b0,        
-  transparent: true, 
-  opacity: 0.85,          
-  depthWrite: true,       
-  side: THREE.DoubleSide,
-  roughness: 0.15,        
-  metalness: 0.4,         
-  clearcoat: 1.0,         
-  clearcoatRoughness: 0.1 
-});
-
-// --- HELPER FOR AUTO-SCROLLING TEXT ---
-function applyAutoScroll(elementId) {
-  const el = document.getElementById(elementId);
-  if (!el) return;
-  
-  el.classList.remove('scrolling-text');
-  el.style.transform = 'translateX(0)';
-  
-  requestAnimationFrame(() => {
-    const parentWidth = el.parentElement.clientWidth;
-    const textWidth = el.scrollWidth;
-    
-    if (textWidth > parentWidth) {
-      const dist = textWidth - parentWidth + 12; 
-      el.style.setProperty('--scroll-dist', `-${dist}px`);
-      el.classList.add('scrolling-text');
-    }
-  });
-}
-
-// --- OLD SETUP UI LOGIC REMOVED ---
-// Files now load automatically from assets/ and data/ folders
-
-// Auto-load files on page load - no upload screen needed
-window.addEventListener('DOMContentLoaded', () => {
-  // Show loading screen
-  const loadingScreen = document.getElementById('loading-screen');
-  if (loadingScreen) loadingScreen.style.display = 'flex';
-  
-  initThree();
-  
-  // Setup Draco compression decoder
-  const dracoLoader = new DRACOLoader();
-  dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
-  dracoLoader.setDecoderConfig({ type: 'js' });
-  
-  const loader = new GLTFLoader();
-  loader.setDRACOLoader(dracoLoader);
-  
-  // Load GLB from server (not from file upload)
-  loader.load('assets/model.glb', (gltf) => {
-    worldGroup.add(gltf.scene);
-    worldGroup.add(pubgLabelsGroup);
-    worldGroup.add(searchPinGroup);
-    
-    let ys = [];
-    gltf.scene.traverse(obj => {
-      if (!obj.isMesh) return;
-      originalMaterials.set(obj.uuid, obj.material);
-      let nameSource = obj;
-      while (nameSource && (!nameSource.name || nameSource.name === '')) nameSource = nameSource.parent;
-      const name = nameSource ? nameSource.name : obj.name;
-      
-      if (/^Plane(\.\d+)?$/.test(name)) {
-        ys.push(new THREE.Box3().setFromObject(obj).getCenter(new THREE.Vector3()).y);
-      } else {
-        buildingMeshesMap.set(name, obj);
-      }
-    });
-    
-    modelBounds = new THREE.Box3().setFromObject(worldGroup);
-    groundY = ys.length > 0 ? ys.sort()[Math.floor(ys.length / 2)] : modelBounds.min.y;
-
-    // Load JSON from server
-    fetch('data/locations.json')
-      .then(r => r.json())
-      .then(data => {
-        mapData = data;
-        
-        const calibData = mapData.find(l => l.id === "calibration_data");
-        if (calibData && calibData.calibration && calibData.calibration.appliedRotationY !== undefined) {
-          worldGroup.rotation.y = calibData.calibration.appliedRotationY;
-        }
-
-        applyDefaultAesthetic();
-        setupCameras(groundY);
-        generatePUBGLabels(); 
-        
-        // Hide setup overlay and show app
-        document.getElementById('setup-overlay').style.display = 'none';
-        document.getElementById('app-container').style.display = 'block';
-        setMode('2d');
-        animate();
-      })
-      .catch(err => {
-        console.error('Error loading JSON:', err);
-        alert('Failed to load location data. Please refresh.');
-      });
-      
-  }, undefined, (error) => {
-    console.error('Error loading GLB:', error);
-    alert('Failed to load 3D model. Please refresh.');
-  });
-});
-
-// --- SEARCH & UI LOGIC ---
-const defaultCategories = [
-  { 
-    id: 'cat_food',
-    name: 'Food', 
-    icon: '<svg viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.86 3.75 3.97V22h2.5v-9.03C11.34 12.86 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/></svg>' 
-  },
-  { 
-    id: 'cat_hostels',
-    name: 'Hostels', 
-    icon: '<svg viewBox="0 0 24 24"><path d="M7 13c1.66 0 3-1.34 3-3S8.66 7 7 7s-3 1.34-3 3 1.34 3 3 3zm12-6h-8v7H3V5H1v15h2v-3h18v3h2v-9c0-2.21-1.79-4-4-4z"/></svg>' 
-  },
-  { 
-    id: 'cat_academics',
-    name: 'Academics', 
-    icon: '<svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>' 
-  },
-  { 
-    id: 'cat_sports',
-    name: 'Sports', 
-    icon: '<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/></svg>' 
-  },
-  { 
-    id: 'cat_utility',
-    name: 'Utility', 
-    icon: '<svg viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>' 
-  }
-];
-const defaultSuggestions = ['LT - A', 'Swimming Pool', 'Bru Cafe', 'Seminar Hall', 'Library'];
-
-const searchInput = document.getElementById('search-input');
-const suggBox = document.getElementById('suggestions');
-const btnClear = document.getElementById('btn-clear-search');
-const btnCloseSheet = document.getElementById('btn-close-sheet');
-const fabBottom = document.querySelector('.fab-bottom');
-const btnShowCats = document.getElementById('btn-show-categories');
-const bottomSheet = document.getElementById('bottom-sheet');
-const btnCollapse = document.getElementById('btn-collapse-sheet');
-const iconCollapse = document.getElementById('icon-collapse');
-const joyZone = document.getElementById('joystick-zone');
-const joyKnob = document.getElementById('joystick-knob');
-
-// 1. --- THE SUB-LIST RENDERER (Used by both Classrooms and Faculty) ---
-function renderCategoryLocations(categoryName, locationIds, onBackCallback = null) {
-  searchInput.value = categoryName;
-  btnClear.style.display = 'flex';
-  suggBox.innerHTML = '';
-
-  const backBtn = document.createElement('div');
-  backBtn.className = 'category-item';
-  backBtn.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
-  backBtn.style.position = 'sticky';
-  backBtn.style.top = '0';
-  backBtn.style.background = 'var(--glass-bg)';
-  backBtn.style.backdropFilter = 'blur(12px)';
-  backBtn.style.zIndex = '10';
-  backBtn.innerHTML = `
-    <div class="category-icon" style="background: transparent;">
-      <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-    </div>
-    <span class="category-name">Back</span>
-  `;
-  
-  backBtn.onclick = (e) => {
-    e.stopPropagation();
-    if (onBackCallback) {
-        onBackCallback(); 
-    } else {
-        searchInput.value = '';
-        btnClear.style.display = 'none';
-        renderCategories(); 
-    }
-  };
-  suggBox.appendChild(backBtn);
-
-  let locations = locationIds.map(id => mapData.find(l => l.id === id)).filter(Boolean);
-  locations.sort((a, b) => a.display_name.localeCompare(b.display_name));
-
-  if (locations.length === 0) {
-     const emptyMsg = document.createElement('div');
-     emptyMsg.className = 'result-item';
-     emptyMsg.innerHTML = `<span class="result-name" style="color: var(--text-muted);">No locations found</span>`;
-     suggBox.appendChild(emptyMsg);
-  } else {
-    locations.forEach(loc => {
-      const div = document.createElement('div');
-      div.className = 'result-item';
-      let metaStr = loc.cat_lvl_1 || '';
-      if(metaStr && loc.cat_lvl_2) metaStr += ` | ${loc.cat_lvl_2}`;
-      div.innerHTML = `<span class="result-name">${loc.display_name}</span><span class="result-meta">${metaStr}</span>`;
-      
-      div.onclick = () => selectLocation(loc);
-      suggBox.appendChild(div);
-    });
-  }
-
-  suggBox.classList.add('active');
-}
-
-// 2. --- THE DEPARTMENT MENU (Reads your JSON Keywords automatically) ---
-function renderFacultyDepartments(allCabinIds) {
-  searchInput.value = "Faculty Departments";
-  btnClear.style.display = 'flex';
-  suggBox.innerHTML = '';
-
-  const backBtn = document.createElement('div');
-  backBtn.className = 'category-item';
-  backBtn.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
-  backBtn.style.position = 'sticky';
-  backBtn.style.top = '0';
-  backBtn.style.background = 'var(--glass-bg)';
-  backBtn.style.backdropFilter = 'blur(12px)';
-  backBtn.style.zIndex = '10';
-  backBtn.innerHTML = `
-    <div class="category-icon" style="background: transparent;">
-      <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-    </div>
-    <span class="category-name">Back to Categories</span>
-  `;
-  backBtn.onclick = (e) => {
-    e.stopPropagation();
-    searchInput.value = '';
-    btnClear.style.display = 'none';
-    renderCategories();
-  };
-  suggBox.appendChild(backBtn);
-
-  // Matches exactly with the keywords in your JSON
-  const departments = [
-    { name: 'Finance', keywords: ['finance'] },
-    { name: 'Marketing', keywords: ['marketing'] },
-    { name: 'IT & Operations', keywords: ['it', 'operations'] },
-    { name: 'HR & Communication Skills', keywords: ['hr', 'softskills', 'communication'] },
-    { name: 'Economics', keywords: ['economics'] }
-  ];
-
-  departments.forEach(dept => {
-    const div = document.createElement('div');
-    div.className = 'category-item';
-    div.innerHTML = `
-      <div class="category-icon" style="background: rgba(255,255,255,0.05);">
-        <svg viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
-      </div>
-      <span class="category-name">${dept.name}</span>
-    `;
-    
-    div.onclick = (e) => {
-      e.stopPropagation();
-      
-      // Dynamically filter cabins by searching your JSON keywords
-      const filteredIds = allCabinIds.filter(id => {
-        const loc = mapData.find(l => l.id === id);
-        if(!loc) return false;
-        const searchableText = [
-           loc.cat_lvl_1, loc.cat_lvl_2, loc.cat_lvl_3, 
-           loc.description, loc.keywords, loc.display_name
-        ].filter(Boolean).join(' ').toLowerCase();
-        
-        return dept.keywords.some(kw => searchableText.includes(kw));
-      });
-      
-      renderCategoryLocations(dept.name, filteredIds, () => {
-         renderFacultyDepartments(allCabinIds);
-      });
-    };
-    
-    suggBox.appendChild(div);
-  });
-
-  suggBox.classList.add('active');
-}
-
-// 3. --- THE MAIN CATEGORY RENDERER (CORRECTED) ---
-function renderCategories() {
-  suggBox.innerHTML = '';
-
-  const featuredRow = document.createElement('div');
-  featuredRow.className = 'featured-categories-row';
-
-  const featuredCats = [
-    {
-      id: 'cat_classrooms',
-      name: 'Classrooms',
-      icon: '<svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>'
-    },
-    {
-      id: 'cat_faculty_cabins',
-      name: 'Faculty Cabins',
-      icon: '<svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>'
-    }
-  ];
-
-  // FEATURED ROW: Uses the List View
-  featuredCats.forEach(cat => {
-    const card = document.createElement('div');
-    card.className = 'featured-category-card';
-    card.innerHTML = `<div class="category-icon">${cat.icon}</div><span class="category-name">${cat.name}</span>`;
-    
-    card.onclick = (e) => { 
-      e.stopPropagation();
-      
-      let matchedIds = [];
-      if (cat.id === 'cat_classrooms') {
-        matchedIds = mapData.filter(l => l.cat_lvl_2 === 'Classroom').map(l => l.id);
-        renderCategoryLocations(cat.name, matchedIds);
-      } 
-      else if (cat.id === 'cat_faculty_cabins') {
-        matchedIds = mapData.filter(l => l.cat_lvl_2 === 'Faculty cabin').map(l => l.id);
-        renderFacultyDepartments(matchedIds); 
-      }
-    };
-    featuredRow.appendChild(card);
-  });
-
-  suggBox.appendChild(featuredRow);
-
-  // STANDARD LIST BELOW: Uses the Map View (selectCategory)
-  defaultCategories.forEach(cat => {
-    const div = document.createElement('div');
-    div.className = 'category-item';
-    div.innerHTML = `<div class="category-icon">${cat.icon}</div><span class="category-name">${cat.name}</span>`;
-    
-    div.onclick = (e) => { 
-      e.stopPropagation();
-      const catData = mapData.find(l => l.id === cat.id);
-      if(catData && catData.location_ids) {
-        
-        // --- THIS PLOTS ON THE MAP ---
-        selectCategory(cat.name, catData.location_ids);
-        
-      } else {
-        console.warn("Category data not found in JSON for:", cat.id);
-      }
-    };
-    
-    suggBox.appendChild(div);
-  });
-  
-  suggBox.classList.add('active');
-}
-
-// --- RECENT SEARCHES MEMORY ---
-function getRecentSearches() {
-  const stored = localStorage.getItem('campusMapRecentSearches');
-  return stored ? JSON.parse(stored) : [];
-}
-
-function addRecentSearch(locId) {
-  let recents = getRecentSearches();
-  // Remove the ID if it's already in the list so we can bump it to the top
-  recents = recents.filter(id => id !== locId);
-  // Add it to the front of the list
-  recents.unshift(locId);
-  // Keep only the most recent 5 searches
-  if (recents.length > 5) recents.pop();
-  localStorage.setItem('campusMapRecentSearches', JSON.stringify(recents));
-}
-
-function renderSuggestions() {
-  suggBox.innerHTML = '';
-  
-  // 1. Fetch recent searches from memory
-  const recentIds = getRecentSearches();
-  const recentLocations = recentIds.map(id => mapData.find(l => l.id === id)).filter(Boolean);
-
-  // 2. If there are recent searches, display them!
-  if (recentLocations.length > 0) {
-    // Add a tiny header
-    const header = document.createElement('div');
-    header.style.padding = '16px 20px 8px 20px';
-    header.style.fontSize = '12px';
-    header.style.fontWeight = '700';
-    header.style.color = 'var(--text-muted)';
-    header.style.textTransform = 'uppercase';
-    header.style.letterSpacing = '0.5px';
-    header.innerText = 'Recent Searches';
-    suggBox.appendChild(header);
-
-    // List the recent locations
-    recentLocations.forEach(loc => {
-      const div = document.createElement('div');
-      div.className = 'result-item';
-      let metaStr = loc.cat_lvl_1 || '';
-      if(metaStr && loc.cat_lvl_2) metaStr += ` | ${loc.cat_lvl_2}`;
-      
-      // Added a small "history/clock" icon next to recent searches
-      div.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 14px;">
-          <svg style="width: 18px; height: 18px; fill: var(--text-muted); flex-shrink: 0;" viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
-          <div style="display: flex; flex-direction: column;">
-            <span class="result-name" style="margin-bottom: 2px;">${loc.display_name}</span>
-            <span class="result-meta">${metaStr}</span>
-          </div>
-        </div>`;
-        
-      div.onclick = () => selectLocation(loc);
-      suggBox.appendChild(div);
-    });
-  }
-
-  // 3. Always show the "Browse Categories" button at the bottom
-  const catBtn = document.createElement('div');
-  catBtn.className = 'category-item';
-  if (recentLocations.length > 0) {
-    catBtn.style.borderTop = '1px solid rgba(255,255,255,0.05)';
-    catBtn.style.marginTop = '4px';
-  }
-  
-  catBtn.innerHTML = `
-    <div class="category-icon" style="background: rgba(66, 133, 244, 0.15); color: var(--accent-blue);">
-      <svg viewBox="0 0 24 24"><path d="M9.17 6l2 2H20v10H4V6h5.17M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
-    </div>
-    <span class="category-name" style="color: var(--accent-blue);">Browse Categories</span>
-  `;
-  
-  catBtn.onclick = (e) => { 
-    e.stopPropagation(); 
-    searchInput.value = ''; 
-    btnClear.style.display = 'none'; 
-    renderCategories(); 
-  };
-  suggBox.appendChild(catBtn);
-  suggBox.classList.add('active');
-}
-
-function renderResults(matches) {
-  suggBox.innerHTML = '';
-  if(matches.length === 0) { suggBox.classList.remove('active'); return; }
-  matches.forEach(loc => {
-    if(loc.system_data) return; 
-    const div = document.createElement('div');
-    div.className = 'result-item';
-    let metaStr = loc.cat_lvl_1 || '';
-    if(metaStr && loc.cat_lvl_2) metaStr += ` | ${loc.cat_lvl_2}`;
-    div.innerHTML = `<span class="result-name">${loc.display_name}</span><span class="result-meta">${metaStr}</span>`;
-    div.onclick = () => selectLocation(loc);
-    suggBox.appendChild(div);
-  });
-  suggBox.classList.add('active');
-}
-
-searchInput.addEventListener('input', (e) => {
-  const val = e.target.value.toLowerCase().trim();
-  
-  // If search is empty, show default suggestions
-  if(!val) { 
-    btnClear.style.display = 'none'; 
-    renderSuggestions(); 
-    return; 
-  }
-  
-  btnClear.style.display = 'flex';
-
-  // Split the user's search by spaces so they can type multiple words (e.g. "LT A")
-  const searchTerms = val.split(/\s+/);
-
-  const matches = mapData.filter(l => {
-    // Ignore system data like calibration and view settings
-    if (l.system_data || l.is_category_node) return false;
-
-    // Create a giant string containing everything we want to search against
-    const searchableText = [
-      l.display_name,
-      l.keywords,
-      l.cat_lvl_1,
-      l.cat_lvl_2,
-      l.cat_lvl_3,
-      l.description
-    ].filter(Boolean).join(' ').toLowerCase(); // Filter removes any null/undefined fields
-
-    // Check if ALL search terms exist somewhere in the searchable text
-    return searchTerms.every(term => searchableText.includes(term));
-  });
-
-  renderResults(matches);
-});
-
-searchInput.addEventListener('focus', () => { if(searchInput.value === '') renderSuggestions(); });
-btnShowCats.addEventListener('click', (e) => { e.stopPropagation(); searchInput.value = ''; btnClear.style.display = 'none'; renderCategories(); });
-btnClear.addEventListener('click', (e) => { e.stopPropagation(); clearSelection(); renderSuggestions(); });
-if(btnCloseSheet) {
-  btnCloseSheet.addEventListener('click', () => { 
-    clearSelection(); 
-    renderSuggestions(); 
-  });
-}
-document.addEventListener('click', e => { if(!e.target.closest('#search-container')) suggBox.classList.remove('active'); });
-
-btnCollapse.addEventListener('click', () => {
-  bottomSheet.classList.toggle('collapsed');
-  
-  if (bottomSheet.classList.contains('collapsed')) {
-    iconCollapse.innerHTML = '<path d="M12 8.5l6 6H6z"/>';
-    if(fabBottom) {
-      fabBottom.classList.remove('sheet-open');
-      fabBottom.classList.add('sheet-collapsed');
-    }
-    if(joyZone) {
-      joyZone.classList.remove('sheet-open');
-      joyZone.classList.add('sheet-collapsed');
-    }
-  } else {
-    iconCollapse.innerHTML = '<path d="M12 15.5l-6-6h12z"/>';
-    if(fabBottom) {
-      fabBottom.classList.remove('sheet-collapsed');
-      fabBottom.classList.add('sheet-open');
-    }
-    if(joyZone) {
-      joyZone.classList.remove('sheet-collapsed');
-      joyZone.classList.add('sheet-open');
-    }
-  }
-});
-
-function selectLocation(loc) {
-  addRecentSearch(loc.id);
-  searchInput.value = loc.display_name;
-  suggBox.classList.remove('active');
-  btnClear.style.display = 'flex';
-  
-  clearMapVisuals();
-
-  // Ensure slider is hidden and standard info is visible
-  const sliderWrapper = document.getElementById('slider-wrapper');
-  if (sliderWrapper) sliderWrapper.style.display = 'none';
-  
-  const tagsContainerEl = document.getElementById('sheet-tags');
-  if (tagsContainerEl) tagsContainerEl.style.display = 'flex';
-
-  // Hide AOD sprites if they exist (handling the array structure)
-  if (typeof aodSpritesMap !== 'undefined' && aodSpritesMap.has(loc.id)) {
-    aodSpritesMap.get(loc.id).forEach(sprite => sprite.visible = false);
-  }
-
-  // Set Info Box text
-  document.getElementById('sheet-title').innerText = loc.display_name;
-  document.getElementById('sheet-desc').innerText = loc.description || 'Campus Location';
-  
-  // Apply Auto-Scroll if text is too long
-  applyAutoScroll('sheet-title');
-  applyAutoScroll('sheet-desc');
-
-  const tagsContainer = document.getElementById('sheet-tags');
-  if (tagsContainer) {
-    tagsContainer.innerHTML = ''; 
-    let tags = [];
-    if (loc.cat_lvl_1) tags.push(loc.cat_lvl_1);
-    if (loc.cat_lvl_2) tags.push(loc.cat_lvl_2);
-    if (loc.cat_lvl_3) tags.push(loc.cat_lvl_3);
-    if (tags.length === 0) tags.push('General');
-
-    tags.forEach((tag, index) => {
-      const pill = document.createElement('div');
-      pill.className = 'tag-pill';
-      const dotClass = index === 0 ? 'tag-dot active' : 'tag-dot';
-      pill.innerHTML = `<div class="${dotClass}"></div>${tag}`;
-      tagsContainer.appendChild(pill);
-    });
-  }
-
-  let nearStr = loc.nearby_1 || '';
-  if(nearStr && loc.nearby_2) nearStr += ` • ${loc.nearby_2}`;
-  
-  const rowNearby = document.getElementById('row-nearby');
-  if (rowNearby) {
-    if(nearStr) {
-      rowNearby.style.display = 'flex';
-      document.getElementById('sheet-nearby').innerText = nearStr;
-      // Apply Auto-Scroll to nearby text
-      applyAutoScroll('sheet-nearby');
-    } else {
-      rowNearby.style.display = 'none';
-    }
-  }
-
-  if (bottomSheet) {
-      bottomSheet.classList.remove('collapsed');
-      document.getElementById('icon-collapse').innerHTML = '<path d="M12 15.5l-6-6h12z"/>';
-      bottomSheet.classList.add('open');
-      
-      if(fabBottom) {
-        fabBottom.classList.remove('sheet-collapsed');
-        fabBottom.classList.add('sheet-open');
-      }
-      if(joyZone) {
-        joyZone.classList.remove('sheet-collapsed');
-        joyZone.classList.add('sheet-open');
-      }
-  }
-
-  worldGroup.updateMatrixWorld();
-
-  const PIN_FLOAT_HEIGHT = 0.2; 
-  const ZOOM_LEVEL_2D = 8;     
-  const ZOOM_DIST_3D = 5;     
-
-  let targetWorldPos = new THREE.Vector3();
-  let firstTargetSet = false;
-  let selectedMeshes = [];
-  let markerCreated = false; // Ensures only 1 pin per location
-
-  if (loc._assignment_type === '2d_coords') {
-    let coordsArr = Array.isArray(loc.coordinates) ? loc.coordinates : [loc.coordinates];
-
-    coordsArr.forEach(coord => {
-      if(!coord) return;
-      
-      let markerLocalPos = new THREE.Vector3(coord.x, groundY, coord.y);
-      let targetRoofY = groundY;
-      
-      if (!firstTargetSet) {
-         targetWorldPos.copy(markerLocalPos).applyMatrix4(worldGroup.matrixWorld);
-         firstTargetSet = true;
-      }
-
-      if (!markerCreated && typeof createSearchMarker === 'function') {
-          createSearchMarker(loc.display_name, markerLocalPos.x, targetRoofY, targetRoofY + PIN_FLOAT_HEIGHT, markerLocalPos.z);
-          markerCreated = true;
-      }
-    });
-
-  } else if (loc._assignment_type === '3d_object') {
-    let objectsArr = Array.isArray(loc.glb_objects) ? loc.glb_objects : [loc.glb_objects];
-
-    objectsArr.forEach(meshName => {
-      if(!meshName) return;
-      const mesh = buildingMeshesMap.get(meshName);
-      
-      if (mesh) {
-        selectedMeshes.push(mesh);
-        
-        const box = new THREE.Box3().setFromObject(mesh);
-        let centerWorld = new THREE.Vector3();
-        box.getCenter(centerWorld); 
-        let targetRoofY = box.max.y; 
-        
-        let markerLocalPos = centerWorld.clone();
-        worldGroup.worldToLocal(markerLocalPos); 
-        
-        if (!firstTargetSet) {
-           targetWorldPos.copy(centerWorld);
-           firstTargetSet = true;
-        }
-
-        if (!markerCreated && typeof createSearchMarker === 'function') {
-            createSearchMarker(loc.display_name, markerLocalPos.x, targetRoofY, targetRoofY + PIN_FLOAT_HEIGHT, markerLocalPos.z);
-            markerCreated = true;
-        }
-      }
-    });
-
-    if (selectedMeshes.length > 0) {
-      if (typeof applyGhostingAndHighlight === 'function') applyGhostingAndHighlight(selectedMeshes);
-    }
-  }
-
-  // Fallback if no target was found to prevent camera breaking
-  if(!firstTargetSet) targetWorldPos.set(0, groundY, 0);
-
-  // Set the 2D Camera Targets
-  controls2D.target.copy(targetWorldPos);
-  camera2D.position.set(targetWorldPos.x, camera2D.position.y, targetWorldPos.z);
-  camera2D.zoom = ZOOM_LEVEL_2D;
-  camera2D.updateProjectionMatrix();
-
-  // Set the 3D Camera Targets
-  let calibPolar = Math.PI * 0.35; 
-  let calibAzimuth = 0;            
-  
-  const vsData = mapData.find(l => l.id === "view_settings");
-  if (vsData && vsData.settings && vsData.settings.v3d) {
-      if (vsData.settings.v3d.polar !== undefined) calibPolar = vsData.settings.v3d.polar;
-      if (vsData.settings.v3d.azimuth !== undefined) calibAzimuth = vsData.settings.v3d.azimuth;
-  }
-
-  controls3D.target.copy(targetWorldPos);
-  const sph = new THREE.Spherical(ZOOM_DIST_3D, calibPolar, calibAzimuth);
-  camera3D.position.setFromSpherical(sph).add(controls3D.target);
-  controls3D.update();
-}
-
-function selectCategory(categoryName, locationIds) {
-  searchInput.value = categoryName;
-  suggBox.classList.remove('active');
-  btnClear.style.display = 'flex';
-
-  clearMapVisuals();
-
-  // Set Info Box text
-  document.getElementById('sheet-title').innerText = categoryName + " Locations";
-  document.getElementById('sheet-desc').innerText = `Showing ${locationIds.length} locations on the map.`;
-  applyAutoScroll('sheet-title');
-  applyAutoScroll('sheet-desc');
-  
-  // Hide standard single-location details
-  const tagsContainer = document.getElementById('sheet-tags');
-  if (tagsContainer) tagsContainer.style.display = 'none'; 
-  
-  const rowNearby = document.getElementById('row-nearby');
-  if (rowNearby) rowNearby.style.display = 'none';
-
-  // Show and populate the category slider wrapper
-  const sliderWrapper = document.getElementById('slider-wrapper');
-  const catSlider = document.getElementById('category-slider');
-  
-  if (sliderWrapper && catSlider) {
-    sliderWrapper.style.display = 'block';
-    catSlider.innerHTML = ''; // Clear old cards
-
-    locationIds.forEach(locId => {
-      const locData = mapData.find(l => l.id === locId);
-      if (!locData) return;
-
-      const card = document.createElement('div');
-      card.className = 'slider-card';
-
-      // Build nearby string for the card
-      let nearStr = locData.nearby_1 || '';
-      if(nearStr && locData.nearby_2) nearStr += ` • ${locData.nearby_2}`;
-      if(!nearStr) nearStr = locData.description || 'No nearby info';
-
-      card.innerHTML = `
-        <div class="slider-card-title">${locData.display_name}</div>
-        <div class="slider-card-desc">${nearStr}</div>
-      `;
-
-      // When clicked, open this specific location!
-      card.onclick = () => { selectLocation(locData); };
-      catSlider.appendChild(card);
-    });
-  }
-
-  if (bottomSheet) {
-      bottomSheet.classList.remove('collapsed');
-      document.getElementById('icon-collapse').innerHTML = '<path d="M12 15.5l-6-6h12z"/>';
-      bottomSheet.classList.add('open');
-      
-      if(fabBottom) {
-        fabBottom.classList.remove('sheet-collapsed');
-        fabBottom.classList.add('sheet-open');
-      }
-      if(joyZone) {
-        joyZone.classList.remove('sheet-collapsed');
-        joyZone.classList.add('sheet-open');
-      }
-  }
-
-  worldGroup.updateMatrixWorld();
-
-  // Zoom parameters adapted for wider category view
-  const PIN_FLOAT_HEIGHT = 0.2; 
-  const ZOOM_LEVEL_2D = 3;     
-  const ZOOM_DIST_3D = 20;     
-
-  let targetWorldPos = new THREE.Vector3();
-  let selectedMeshes = [];
-  let sumX = 0, sumZ = 0, targetCount = 0;
-
-  // Loop through all IDs specified in the JSON category
-  locationIds.forEach(locId => {
-    const loc = mapData.find(l => l.id === locId);
-    if (!loc) return;
-
-    // Hide AOD sprites if they exist (handling the array structure)
-    if (typeof aodSpritesMap !== 'undefined' && aodSpritesMap.has(loc.id)) {
-      aodSpritesMap.get(loc.id).forEach(sprite => sprite.visible = false);
-    }
-
-    let markerCreated = false; // Ensures only 1 pin per location
-
-    if (loc._assignment_type === '2d_coords') {
-      let coordsArr = Array.isArray(loc.coordinates) ? loc.coordinates : [loc.coordinates];
-
-      coordsArr.forEach(coord => {
-        if(!coord) return;
-        let markerLocalPos = new THREE.Vector3(coord.x, groundY, coord.y);
-        let targetRoofY = groundY;
-        
-        let worldP = markerLocalPos.clone().applyMatrix4(worldGroup.matrixWorld);
-        sumX += worldP.x; sumZ += worldP.z; targetCount++;
-
-        if (!markerCreated && typeof createSearchMarker === 'function') {
-            createSearchMarker(loc.display_name, markerLocalPos.x, targetRoofY, targetRoofY + PIN_FLOAT_HEIGHT, markerLocalPos.z);
-            markerCreated = true;
-        }
-      });
-
-    } else if (loc._assignment_type === '3d_object') {
-      let objectsArr = Array.isArray(loc.glb_objects) ? loc.glb_objects : [loc.glb_objects];
-
-      objectsArr.forEach(meshName => {
-        if(!meshName) return;
-        const mesh = buildingMeshesMap.get(meshName);
-        
-        if (mesh) {
-          selectedMeshes.push(mesh);
-          
-          const box = new THREE.Box3().setFromObject(mesh);
-          let centerWorld = new THREE.Vector3();
-          box.getCenter(centerWorld); 
-          let targetRoofY = box.max.y; 
-          
-          let markerLocalPos = centerWorld.clone();
-          worldGroup.worldToLocal(markerLocalPos); 
-          
-          sumX += centerWorld.x; sumZ += centerWorld.z; targetCount++;
-
-          if (!markerCreated && typeof createSearchMarker === 'function') {
-              createSearchMarker(loc.display_name, markerLocalPos.x, targetRoofY, targetRoofY + PIN_FLOAT_HEIGHT, markerLocalPos.z);
-              markerCreated = true;
-          }
-        }
-      });
-    }
-  });
-
-  // Apply ghosting to all collected 3D meshes
-  if (selectedMeshes.length > 0) {
-    if (typeof applyGhostingAndHighlight === 'function') applyGhostingAndHighlight(selectedMeshes);
-  }
-
-  // Calculate the center point of all locations for the camera
-  if (targetCount > 0) {
-    targetWorldPos.set(sumX / targetCount, groundY, sumZ / targetCount);
-  } else {
-    targetWorldPos.set(0, groundY, 0);
-  }
-
-  // Set the 2D Camera Targets
-  controls2D.target.copy(targetWorldPos);
-  camera2D.position.set(targetWorldPos.x, camera2D.position.y, targetWorldPos.z);
-  camera2D.zoom = ZOOM_LEVEL_2D;
-  camera2D.updateProjectionMatrix();
-
-  // Set the 3D Camera Targets
-  let calibPolar = Math.PI * 0.35; 
-  let calibAzimuth = 0;            
-  
-  const vsData = mapData.find(l => l.id === "view_settings");
-  if (vsData && vsData.settings && vsData.settings.v3d) {
-      if (vsData.settings.v3d.polar !== undefined) calibPolar = vsData.settings.v3d.polar;
-      if (vsData.settings.v3d.azimuth !== undefined) calibAzimuth = vsData.settings.v3d.azimuth;
-  }
-
-  controls3D.target.copy(targetWorldPos);
-  const sph = new THREE.Spherical(ZOOM_DIST_3D, calibPolar, calibAzimuth);
-  camera3D.position.setFromSpherical(sph).add(controls3D.target);
-  controls3D.update();
-}
-
-function clearSelection() {
-  searchInput.value = '';
-  btnClear.style.display = 'none';
-  
-  bottomSheet.classList.remove('open');
-  
-  if (fabBottom) {
-    fabBottom.classList.remove('sheet-open');
-    fabBottom.classList.remove('sheet-collapsed');
-  }
-
-  if (joyZone) {
-    joyZone.classList.remove('sheet-open');
-    joyZone.classList.remove('sheet-collapsed');
-  }
-
-  // Hide the category slider wrapper
-  const sliderWrapper = document.getElementById('slider-wrapper');
-  if (sliderWrapper) sliderWrapper.style.display = 'none';
-  
-  clearMapVisuals();
-  
-  // Turn all AOD sprites back on (handling the array structure)
-  aodSpritesMap.forEach(spritesArray => {
-    spritesArray.forEach(sprite => sprite.visible = true);
-  });
-}
-
-function applyDefaultAesthetic() {
-  worldGroup.updateMatrixWorld(true);
-  buildingMeshesMap.forEach((mesh) => {
-    const box = new THREE.Box3().setFromObject(mesh);
-    const height = box.max.y - box.min.y;
-    const isGroundPlane = /^Plane/i.test(mesh.name || '');
-
-    if (height > 0.05 && !isGroundPlane) {
-      mesh.material = defaultBuildingMat;
-    } else {
-      if (typeof originalMaterials !== 'undefined' && originalMaterials.has(mesh.uuid)) {
-        mesh.material = originalMaterials.get(mesh.uuid);
-      }
-    }
-  });
-}
-
-function clearMapVisuals() {
-  while(searchPinGroup.children.length > 0){ 
-      searchPinGroup.remove(searchPinGroup.children[0]); 
-  }
-  if (activeHighlightMeshes && activeHighlightMeshes.length > 0) {
-    activeHighlightMeshes.forEach(mesh => {
-      if (mesh.userData.baseScale) {
-        mesh.scale.copy(mesh.userData.baseScale);
-      }
-    });
-  }
-  applyDefaultAesthetic(); 
-  activeHighlightMeshes = [];
-  if (typeof updateBuildingVisibility === 'function') updateBuildingVisibility();
-}
-
-function applyGhostingAndHighlight(selectedMeshes) {
-  const highlightMat = new THREE.MeshStandardMaterial({ 
-    color: 0x4285f4, emissive: 0x174ea6, emissiveIntensity: 0.4, transparent: true, opacity: 0.95 
-  });
-  
-  const searchGhostMat = defaultBuildingMat.clone();
-  searchGhostMat.opacity = 0.5; 
-
-  activeHighlightMeshes = selectedMeshes; // Store the array
-
-  buildingMeshesMap.forEach((mesh) => {
-    if (selectedMeshes.includes(mesh)) {
-      mesh.material = highlightMat;
-    } else {
-      const box = new THREE.Box3().setFromObject(mesh);
-      const height = box.max.y - box.min.y;
-      const isGroundPlane = /^Plane/i.test(mesh.name || '');
-
-      if (height > 0.05 && !isGroundPlane) {
-        mesh.material = searchGhostMat;
-      } else {
-        if (typeof originalMaterials !== 'undefined' && originalMaterials.has(mesh.uuid)) {
-          mesh.material = originalMaterials.get(mesh.uuid);
-        }
-      }
-    }
-  });
-  updateBuildingVisibility();
-}
-
-function createSearchMarker(text, x, bottomY, topY, z) {
-  // --- TEXT BOX CONTROLS ---
-  const GLASS_BG = 'rgba(255, 255, 255, 0.85)'; 
-  const BORDER_COLOR = 'rgba(18, 19, 24, 0.85)'; 
-  const TEXT_COLOR = '#121318'; 
-  const TEXT_BOX_BORDER_WIDTH = 4; 
-  
-  // ---> NEW PREMIUM SOLID PIN CONTROLS <---
-  const PIN_BORDER = '#ffffff'; // Exact toggle button blue
-  const PIN_BORDER_WIDTH = 3;   // Thick, bold accent edge
-  const DOT_COLOR = '#ffffff';  // Crisp white inner dot
-  
-  const TEXT_SIZE = 48;               
-  const SPRITE_SCALE = 0.006; 
-
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  ctx.font = `900 ${TEXT_SIZE}px "Inter", sans-serif`; 
-  const metrics = ctx.measureText(text);
-  
-  const boxWidth = metrics.width + 60; 
-  canvas.width = Math.max(200, boxWidth + 40); 
-  canvas.height = 230; 
-  
-  const ctx2 = canvas.getContext('2d');
-  ctx2.font = `900 ${TEXT_SIZE}px "Inter", sans-serif`;
-  ctx2.textAlign = 'center';
-  ctx2.textBaseline = 'middle';
-  
-  const centerX = canvas.width / 2;
-  const pillHeight = 80;
-  const pillY = 20;
-  
-  // 1. Draw Text Box
-  ctx2.shadowColor = 'rgba(0, 0, 0, 0.4)';
-  ctx2.shadowBlur = 15; 
-  ctx2.shadowOffsetY = 6;
-  
-  ctx2.fillStyle = GLASS_BG; 
-  ctx2.strokeStyle = BORDER_COLOR;
-  ctx2.lineWidth = TEXT_BOX_BORDER_WIDTH; 
-  
-  ctx2.beginPath();
-  ctx2.roundRect(centerX - boxWidth/2, pillY, boxWidth, pillHeight, pillHeight/2);
-  ctx2.fill();
-  ctx2.stroke();
-  
-  ctx2.shadowBlur = 0; 
-  ctx2.shadowOffsetY = 0;
-  ctx2.fillStyle = TEXT_COLOR; 
-  ctx2.fillText(text, centerX, pillY + pillHeight/2 + 3);
-
-  const pinGap = 60; 
-  const pinY = pillY + pillHeight + pinGap; 
-  
-  // 2. Create the Dark "Matte Texture" Gradient for the Pin
-  // This simulates the sleek dark theme of your UI panels
-  const pinGradient = ctx2.createLinearGradient(centerX - 20, pinY - 45, centerX + 20, pinY + 15);
-  pinGradient.addColorStop(0, '#2a2d39'); // Lighter dark at the top
-  pinGradient.addColorStop(1, '#121318'); // Deep background color at the bottom
-  
-  // 3. Draw the Solid, Themed Pin
-  ctx2.shadowColor = 'rgba(0, 0, 0, 0.7)';
-  ctx2.shadowBlur = 12; 
-  ctx2.shadowOffsetY = 6;
-
-  ctx2.beginPath();
-  ctx2.arc(centerX, pinY - 25, 22, Math.PI * 0.18, Math.PI * 0.82, true); 
-  ctx2.lineTo(centerX, pinY + 12); 
-  ctx2.closePath();
-  
-  // Apply the solid dark UI texture
-  ctx2.fillStyle = pinGradient;
-  ctx2.fill();
-  
-  // Apply the glowing blue border
-  ctx2.strokeStyle = PIN_BORDER; 
-  ctx2.lineWidth = PIN_BORDER_WIDTH; 
-  ctx2.stroke();
-
-  // 4. Draw Crisp Inner Dot
-  ctx2.shadowBlur = 0; 
-  ctx2.shadowOffsetY = 0;
-  ctx2.beginPath();
-  ctx2.arc(centerX, pinY - 25, 6, 0, Math.PI * 2);
-  ctx2.fillStyle = DOT_COLOR;
-  ctx2.fill();
-
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  
-  const spriteMat = new THREE.SpriteMaterial({ 
-    map: tex, 
-    depthTest: false,
-    transparent: true,
-    color: new THREE.Color(1.0, 1.0, 1.0) 
-  });
-  const sprite = new THREE.Sprite(spriteMat);
-  
-  const anchorY = 1.0 - ((pinY + 15) / canvas.height); 
-  sprite.center.set(0.5, anchorY);
-  
-  sprite.scale.set(canvas.width * SPRITE_SCALE, canvas.height * SPRITE_SCALE, 1);
-  sprite.position.set(x, topY, z);
-  sprite.renderOrder = 999; 
-  
-  sprite.userData.baseScale = new THREE.Vector2(canvas.width * SPRITE_SCALE, canvas.height * SPRITE_SCALE);
-  sprite.userData.isSearchMarker = true; 
-  searchPinGroup.add(sprite);
-}
-  
-function createPUBGLabel(text, x, z, yOffset) {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  ctx.font = '900 48px "Inter", sans-serif'; 
-  const metrics = ctx.measureText(text);
-  canvas.width = metrics.width + 40; 
-  canvas.height = 80;
-  
-  const ctx2 = canvas.getContext('2d');
-  ctx2.font = '900 48px "Inter", sans-serif';
-  ctx2.textAlign = 'center';
-  ctx2.textBaseline = 'middle';
-  
-  ctx2.lineWidth = 10;
-  ctx2.strokeStyle = 'rgba(0, 0, 0, 0.9)';
-  ctx2.strokeText(text, canvas.width / 2, canvas.height / 2);
-  ctx2.fillStyle = 'rgba(255, 255, 255, 1)';
-  ctx2.fillText(text, canvas.width / 2, canvas.height / 2);
-
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.minFilter = THREE.LinearFilter;
-  
-  const spriteMat = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true });
-  const sprite = new THREE.Sprite(spriteMat);
-  
-  const scale = 0.005; 
-  sprite.scale.set(canvas.width * scale, canvas.height * scale, 1);
-  sprite.position.set(x, yOffset, z); 
-  sprite.renderOrder = 998; 
-  
-  sprite.userData.baseScale = new THREE.Vector2(canvas.width * scale, canvas.height * scale);
-  return sprite;
-}
-
-function generatePUBGLabels() {
-  mapData.forEach(loc => {
-    if (loc.always_on_display === 1 || loc.always_on_display === "1") {
-      let spritesForLoc = []; // Array to hold multiple labels if needed
-
-      if (loc._assignment_type === '2d_coords' && loc.coordinates) {
-        // Handle both single coordinate objects and arrays of coordinates
-        let coordsArr = Array.isArray(loc.coordinates) ? loc.coordinates : [loc.coordinates];
-
-        coordsArr.forEach(coord => {
-          if (coord && coord.x !== undefined && coord.y !== undefined) {
-            // Note: coord.y from JSON maps to the Z axis in 3D space
-            const labelSprite = createPUBGLabel(loc.display_name, coord.x, coord.y, groundY + 0.3);
-            pubgLabelsGroup.add(labelSprite);
-            spritesForLoc.push(labelSprite);
-          }
-        });
-
-      } else if (loc._assignment_type === '3d_object' && loc.glb_objects) {
-        // Handle both single mesh strings and arrays of strings
-        let objectsArr = Array.isArray(loc.glb_objects) ? loc.glb_objects : [loc.glb_objects];
-
-        objectsArr.forEach(meshName => {
-          if(!meshName) return;
-          const mesh = buildingMeshesMap.get(meshName);
-          if (mesh) {
-            const box = new THREE.Box3().setFromObject(mesh);
-            const center = new THREE.Vector3();
-            box.getCenter(center);
-            let yOffset = box.max.y + 0.5; 
-            
-            worldGroup.worldToLocal(center); 
-            
-            const labelSprite = createPUBGLabel(loc.display_name, center.x, center.z, yOffset);
-            pubgLabelsGroup.add(labelSprite);
-            spritesForLoc.push(labelSprite);
-          }
-        });
-      }
-
-      // Save the array of sprites to the map so they can be hidden when searched
-      if (spritesForLoc.length > 0) {
-        aodSpritesMap.set(loc.id, spritesForLoc);
-      }
-    }
-  });
-}
-
-function applyCameraOffset() {
-  // 120 pixels pushes the "center" of the map higher up the screen
-  // so the bottom sheet never blocks the location you search for!
-  const yOffset = 120; 
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  
-  if (camera2D) camera2D.setViewOffset(w, h, 0, yOffset, w, h);
-  if (camera3D) camera3D.setViewOffset(w, h, 0, yOffset, w, h);
-}
-
-function initThree() {
-  const canvas = document.getElementById('map-canvas');
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
-  renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.0;
-  
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color('#121318'); 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.9));
-  const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-  dirLight.position.set(40, 80, 40);
-  scene.add(dirLight);
-
-  scene.add(worldGroup);
-
-  camera2D = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 5000);
-  camera3D = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 5000);
-  applyCameraOffset();
-  controls2D = new OrbitControls(camera2D, canvas);
-  controls2D.enableRotate = true; // Allow twisting in 2D
-  controls2D.minPolarAngle = 0;   // Lock tilt so it stays perfectly top-down
-  controls2D.maxPolarAngle = 0;   // Lock tilt so it stays perfectly top-down
-  controls2D.enableDamping = true;
-  controls2D.dampingFactor = 0.1;
-
-  controls3D = new OrbitControls(camera3D, canvas);
-  controls3D.enableDamping = true;
-  controls3D.dampingFactor = 0.1;
-  controls3D.maxPolarAngle = Math.PI * 0.45;
-
-  window.addEventListener('resize', () => {
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    camera3D.aspect = window.innerWidth / window.innerHeight;
-    camera3D.updateProjectionMatrix();
-    if(modelBounds) fitOrthoToMobileScreen();
-    applyCameraOffset();
-  });
-
-  // Assign Touch Actions: 1 Finger = Pan, 2 Fingers = Zoom, Twist, & Tilt
-  controls2D.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
-  controls3D.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE }; // Unlocks 3D twisting and tilting!
-}
-
-function setupCameras(gY) {
-  const viewSettingsData = mapData.find(l => l.id === "view_settings");
-  const center = new THREE.Vector3();
-  modelBounds.getCenter(center);
-  const size = new THREE.Vector3();
-  modelBounds.getSize(size);
-  
-  fitOrthoToMobileScreen();
-
-  if (viewSettingsData && viewSettingsData.settings) {
-    const vs = viewSettingsData.settings;
-    if (vs.visuals) {
-      renderer.toneMappingExposure = vs.visuals.exposure !== undefined ? vs.visuals.exposure : 1.0;
-      const canvas = document.getElementById('map-canvas');
-      canvas.style.filter = `brightness(${vs.visuals.brightness}) contrast(${vs.visuals.contrast}) saturate(${vs.visuals.saturation})`;
-    }
-    if (vs.v2d) {
-      camera2D.position.set(vs.v2d.x, center.y + 200, vs.v2d.z);
-      camera2D.zoom = vs.v2d.zoom;
-      controls2D.target.set(vs.v2d.x, gY, vs.v2d.z);
-      camera2D.updateProjectionMatrix();
-    }
-    if (vs.v3d) {
-      controls3D.target.set(vs.v3d.x, gY, vs.v3d.z);
-      const sph = new THREE.Spherical(vs.v3d.distance, vs.v3d.polar, vs.v3d.azimuth);
-      camera3D.position.setFromSpherical(sph).add(controls3D.target);
-      controls3D.update();
-    }
-  }
-}
-
-function fitOrthoToMobileScreen() {
-  if (!modelBounds) return;
-  const aspect = window.innerWidth / window.innerHeight;
-  const sizeX = modelBounds.max.x - modelBounds.min.x;
-  const sizeZ = modelBounds.max.z - modelBounds.min.z;
-  
-  let halfX = (sizeX * 1.05) / 2;
-  let halfZ = (sizeZ * 1.05) / 2;
-  if (halfX / aspect > halfZ) halfZ = halfX / aspect;
-  else halfX = halfZ * aspect;
-  
-  const zoom = camera2D.zoom || 1;
-  camera2D.left = -halfX; camera2D.right = halfX;
-  camera2D.top = halfZ; camera2D.bottom = -halfZ;
-  camera2D.zoom = zoom;
-  camera2D.updateProjectionMatrix();
-}
-
-document.getElementById('btn-2d').addEventListener('click', () => setMode('2d'));
-document.getElementById('btn-3d').addEventListener('click', () => setMode('3d'));
-
-// --- ZOOM BUTTONS LOGIC ---
-document.getElementById('btn-zoom-in').addEventListener('click', () => {
-  if (activeCamera === camera2D) {
-    camera2D.zoom *= 1.3;
-    camera2D.updateProjectionMatrix();
-  } else if (activeCamera === camera3D) {
-    const offset = new THREE.Vector3().copy(camera3D.position).sub(controls3D.target);
-    const sph = new THREE.Spherical().setFromVector3(offset);
-    sph.radius = Math.max(2, sph.radius * 0.75); // Zoom in, but prevent going inside buildings
-    camera3D.position.setFromSpherical(sph).add(controls3D.target);
-    controls3D.update();
-  }
-});
-
-document.getElementById('btn-zoom-out').addEventListener('click', () => {
-  if (activeCamera === camera2D) {
-    camera2D.zoom /= 1.3;
-    camera2D.updateProjectionMatrix();
-  } else if (activeCamera === camera3D) {
-    const offset = new THREE.Vector3().copy(camera3D.position).sub(controls3D.target);
-    const sph = new THREE.Spherical().setFromVector3(offset);
-    sph.radius *= 1.33; // Zoom out
-    camera3D.position.setFromSpherical(sph).add(controls3D.target);
-    controls3D.update();
-  }
-});
-
-// --- COMPASS CLICK LOGIC (Reset View) ---
-document.getElementById('btn-compass').addEventListener('click', () => {
-  const vsData = mapData.find(l => l.id === "view_settings");
-  
-  if (activeCamera === camera3D) {
-    let defAzimuth = 0;
-    let defPolar = Math.PI * 0.35;
-    if (vsData && vsData.settings && vsData.settings.v3d) {
-      if (vsData.settings.v3d.azimuth !== undefined) defAzimuth = vsData.settings.v3d.azimuth;
-      if (vsData.settings.v3d.polar !== undefined) defPolar = vsData.settings.v3d.polar;
-    }
-    const offset = new THREE.Vector3().copy(camera3D.position).sub(controls3D.target);
-    const sph = new THREE.Spherical().setFromVector3(offset);
-    sph.theta = defAzimuth;
-    sph.phi = defPolar;
-    camera3D.position.setFromSpherical(sph).add(controls3D.target);
-    controls3D.update();
-  } else if (activeCamera === camera2D) {
-    let defZoom = 3;
-    if (vsData && vsData.settings && vsData.settings.v2d && vsData.settings.v2d.zoom !== undefined) {
-      defZoom = vsData.settings.v2d.zoom;
-    }
-    fitOrthoToMobileScreen(); // Resets bounding box
-    camera2D.zoom = defZoom;
-    camera2D.updateProjectionMatrix();
-  }
-});
-
-function updateBuildingVisibility() {
-  const is2D = document.getElementById('btn-2d').classList.contains('active');
-
-  buildingMeshesMap.forEach((mesh) => {
-    const box = new THREE.Box3().setFromObject(mesh);
-    const height = box.max.y - box.min.y;
-    const isGroundPlane = /^Plane/i.test(mesh.name || '');
-
-    if (height > 0.05 && !isGroundPlane) {
-      if (is2D) {
-        mesh.visible = false;
-      } else {
-        mesh.visible = true;
-      }
-    } else {
-      mesh.visible = true;
-    }
-  });
-}
-
-// --- JOYSTICK VISIBILITY LOGIC ---
-function updateJoystickVisibility() {
-  const is3D = document.getElementById('btn-3d').classList.contains('active');
-  const suggActive = suggBox.classList.contains('active');
-  const joyZone = document.getElementById('joystick-zone');
-  
-  if (joyZone) {
-    // Only show joystick if in 3D mode AND the search suggestions are closed
-    if (is3D && !suggActive) {
-      joyZone.style.display = 'block';
-    } else {
-      joyZone.style.display = 'none';
-    }
-  }
-}
-
-// Automatically watch the suggestions box. Whenever it opens or closes, update the joystick!
-const suggObserver = new MutationObserver(() => {
-  updateJoystickVisibility();
-});
-suggObserver.observe(suggBox, { attributes: true, attributeFilter: ['class'] });
-
-function setMode(mode) {
-  const btn2d = document.getElementById('btn-2d');
-  const btn3d = document.getElementById('btn-3d');
-  
-  if (mode === '2d') {
-    btn2d.classList.add('active');
-    btn3d.classList.remove('active');
-    activeCamera = camera2D;
-    controls2D.enabled = true;
-    controls3D.enabled = false;
-  } else {
-    btn3d.classList.add('active');
-    btn2d.classList.remove('active');
-    activeCamera = camera3D;
-    controls3D.enabled = true;
-    controls2D.enabled = false;
-  }
-  
-  // Use our new smart visibility checker
-  updateJoystickVisibility();
-  
-  if (typeof updateBuildingVisibility === 'function') updateBuildingVisibility();
-}
-
-function animate() {
-  requestAnimationFrame(animate);
-
-// --- REAL-TIME COMPASS ROTATION ---
-  const compassArrow = document.getElementById('compass-arrow');
-  if (compassArrow && activeCamera) {
-    // Read the rotation from whichever camera is currently active
-    const currentControls = activeCamera === camera3D ? controls3D : controls2D;
-    const azimuth = currentControls.getAzimuthalAngle();
-    
-    // +180 ensures the default points downwards (South facing up)
-    const deg = (azimuth * 180 / Math.PI) + 180; 
-    compassArrow.style.transform = `rotate(${deg}deg)`;
-  }
-
-  const slowTime = Date.now() * 0.002; 
-
-if (activeHighlightMeshes && activeHighlightMeshes.length > 0) {
-    activeHighlightMeshes.forEach(mesh => {
-      if (!mesh.userData.baseScale) {
-        mesh.userData.baseScale = mesh.scale.clone();
-      }
-      const blockBreath = 1.0 + Math.sin(slowTime) * 0.15; 
-      mesh.scale.copy(mesh.userData.baseScale).multiplyScalar(blockBreath);
-      
-      if (mesh.material) {
-        mesh.material.emissiveIntensity = 0.4;
-      }
-    });
-  }
-
-  if(controls2D.enabled) controls2D.update();
-  if(controls3D.enabled) controls3D.update();
-  
-  const resizeLabels = (group) => {
-    group.children.forEach(item => {
-      
-      if (item.userData.isSearchLine) {
-        item.material.opacity = 0.25 + Math.sin(slowTime) * 0.15;
-        return;
-      }
-
-      let sprite = item.type === "Sprite" ? item : item.children.find(c => c.type === "Sprite");
-      if (!sprite || !sprite.userData.baseScale) return;
-      
-      const base = sprite.userData.baseScale;
-      let factor = 1.0;
-      
-      if (activeCamera.isOrthographicCamera) {
-        factor = Math.max(0.6, Math.min(1.8, 1 / activeCamera.zoom)); 
-      } else {
-        const dist = activeCamera.position.distanceTo(item.position);
-        factor = Math.max(0.4, Math.min(2.5, dist * 0.0015));
-      }
-
-      if (sprite.userData.isSearchMarker) {
-        const textBreath = 1.0 + Math.sin(slowTime) * 0.025; 
-        factor *= textBreath;
-      }
-
-      sprite.scale.set(base.x * factor, base.y * factor, 1);
-    });
-  };
-  
-  if (pubgLabelsGroup && activeCamera) resizeLabels(pubgLabelsGroup);
-  if (searchPinGroup && activeCamera) resizeLabels(searchPinGroup);
-
-  if(renderer && activeCamera) renderer.render(scene, activeCamera);
-}
-
-// --- VIRTUAL JOYSTICK LOGIC ---
-let joyActive = false;
-let joyOrigin = { x: 0, y: 0 };
-let animationFrameId;
-
-if(joyZone) {
-  joyZone.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    joyActive = true;
-    const rect = joyZone.getBoundingClientRect();
-    joyOrigin = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-    handleJoyMove(e.changedTouches[0]);
-  }, { passive: false });
-
-  joyZone.addEventListener('touchmove', (e) => {
-    if (!joyActive) return;
-    e.preventDefault();
-    handleJoyMove(e.changedTouches[0]);
-  }, { passive: false });
-
-  joyZone.addEventListener('touchend', () => {
-    joyActive = false;
-    joyKnob.style.transform = `translate(0px, 0px)`;
-    cancelAnimationFrame(animationFrameId);
-  });
-}
-
-function handleJoyMove(touch) {
-  let dx = touch.clientX - joyOrigin.x;
-  let dy = touch.clientY - joyOrigin.y;
-  const maxDist = 24; 
-  
-  const dist = Math.hypot(dx, dy);
-  if (dist > maxDist) {
-    dx = (dx / dist) * maxDist;
-    dy = (dy / dist) * maxDist;
-  }
-  
-  joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
-  
-  cancelAnimationFrame(animationFrameId);
-  function applyRotation() {
-    if (!joyActive || !controls3D.enabled) return;
-    
-    const offset = new THREE.Vector3().copy(camera3D.position).sub(controls3D.target);
-    const sph = new THREE.Spherical().setFromVector3(offset);
-    
-    sph.theta -= dx * 0.0007; 
-    sph.phi -= dy * 0.0007;   
-    sph.phi = Math.max(0.1, Math.min(Math.PI * 0.45, sph.phi));
-    
-    camera3D.position.setFromSpherical(sph).add(controls3D.target);
-    controls3D.update();
-    
-    animationFrameId = requestAnimationFrame(applyRotation);
-  }
-  applyRotation();
-}
-
-// Handle Loading Screen
-  window.addEventListener('load', () => {
-    // Wait for 2.5 seconds (2500 milliseconds)
-    setTimeout(() => {
-      const loader = document.getElementById('loading-screen');
-      if (loader) {
-        // Trigger the CSS fade out
-        loader.style.opacity = '0';
-        loader.style.visibility = 'hidden';
-        
-        // Remove it from the document entirely after the fade finishes (600ms)
-        setTimeout(() => {
-          loader.remove();
-        }, 600); 
-      }
-    }, 2500); 
-  });
-</script>
+<script type="module" src="js/app.js?v=8"></script>
 </body>
 </html>

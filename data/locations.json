@@ -533,9 +533,9 @@
     "keywords": "Classroom 20, CR20, CR-20, Classroom",
     "description": "Academics, 1st Floor",
     "always_on_display": 0,
-    "glb_obj/coordinates": "CR_-_20",
+    "glb_obj/coordinates": "CR_-20",
     "coordinates": null,
-    "glb_objects": "CR_-_20",
+    "glb_objects": "CR_-20",
     "_assignment_type": "3d_object",
     "_assignment_count": 1
   },

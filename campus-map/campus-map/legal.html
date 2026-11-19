@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="theme-color" content="#121318">
+<meta name="description" content="Privacy, cookies, consent, third parties, security and terms of use for Campus Connect, the IFHE Hyderabad campus map by Dot Club.">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Privacy and Terms · Campus Connect</title>
+<style>
+  :root {
+    --bg: #121318;
+    --panel: #1c1e26;
+    --border: rgba(255, 255, 255, 0.1);
+    --accent: #8ab4f8;
+    --accent-strong: #4285f4;
+    --text: #e8eaed;
+    --muted: #9aa0a6;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body {
+    background: var(--bg); color: var(--text); font-family: var(--font);
+    font-size: 16px; line-height: 1.65; -webkit-text-size-adjust: 100%;
+  }
+  a { color: var(--accent); text-underline-offset: 3px; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 12px;
+    padding: 12px max(16px, env(safe-area-inset-left)) 12px max(16px, env(safe-area-inset-right));
+    padding-top: max(12px, env(safe-area-inset-top));
+    background: rgba(18, 19, 24, 0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar img { width: 36px; height: 36px; object-fit: contain; }
+  .topbar strong { flex: 1; font-size: 16px; font-weight: 600; }
+  .back {
+    display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border-radius: 20px;
+    background: var(--accent-strong); color: white; text-decoration: none; font-size: 14px; font-weight: 600;
+  }
+
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: clamp(28px, 6vw, 40px); line-height: 1.15; letter-spacing: -0.5px; margin-bottom: 12px; }
+  .lede { color: var(--muted); font-size: 17px; margin-bottom: 8px; }
+  .meta { color: var(--muted); font-size: 14px; margin-bottom: 28px; }
+
+  .toc {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 36px;
+  }
+  .toc a {
+    display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 18px;
+    background: var(--panel); border: 1px solid var(--border); color: var(--text); text-decoration: none; font-size: 14px;
+  }
+  .toc a:hover { border-color: var(--accent); }
+
+  section { padding: 28px 0; border-top: 1px solid var(--border); }
+  h2 { font-size: 22px; line-height: 1.3; margin-bottom: 12px; }
+  h3 { font-size: 17px; margin: 18px 0 6px; }
+  p + p, p + ul, ul + p, table + p { margin-top: 12px; }
+  ul { padding-left: 22px; }
+  li + li { margin-top: 6px; }
+  .note {
+    margin-top: 16px; padding: 14px 16px; border-radius: 12px;
+    background: rgba(66, 133, 244, 0.1); border: 1px solid rgba(66, 133, 244, 0.3); font-size: 15px;
+  }
+
+  .table-wrap { overflow-x: auto; margin-top: 12px; border: 1px solid var(--border); border-radius: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 520px; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  th { background: var(--panel); font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+  code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; background: var(--panel); padding: 1px 6px; border-radius: 6px; }
+
+  .choice {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; padding: 16px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+  }
+  .choice p { flex: 1 1 240px; margin: 0; font-size: 15px; }
+  .choice button {
+    min-height: 44px; padding: 0 18px; border-radius: 22px; cursor: pointer; font-size: 15px; font-weight: 600;
+    border: 1px solid var(--border); background: transparent; color: var(--text);
+  }
+  .choice button.primary { background: var(--accent-strong); border-color: var(--accent-strong); color: white; }
+  #consent-state { font-weight: 600; }
+
+  footer { max-width: 760px; margin: 0 auto; padding: 0 16px 40px; color: var(--muted); font-size: 13px; }
+
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .topbar, .toc, .choice { display: none; }
+    body { background: white; color: black; }
+    a { color: black; }
+  }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <img src="assets/icon-192.png" alt="" width="36" height="36">
+  <strong>Campus Connect</strong>
+  <a class="back" href="./">Back to the map</a>
+</header>
+
+<main>
+  <h1>Privacy, cookies and terms</h1>
+  <p class="lede">The short version: the map works without an account, your location never leaves your phone, and analytics only switch on if you say yes.</p>
+  <p class="meta">Last updated 3 November 2026. Run by Dot Club, IBS Hyderabad.</p>
+
+  <nav class="toc" aria-label="On this page">
+    <a href="#privacy">Privacy</a>
+    <a href="#location">Location</a>
+    <a href="#consent">Consent</a>
+    <a href="#cookies">Cookies and storage</a>
+    <a href="#third-parties">Third parties</a>
+    <a href="#rights">Your rights (DPDP)</a>
+    <a href="#retention">How long we keep data</a>
+    <a href="#children">Under 18</a>
+    <a href="#security">Security</a>
+    <a href="#terms">Terms of use</a>
+    <a href="#contact">Contact</a>
+  </nav>
+
+  <section id="privacy">
+    <h2>Privacy notice</h2>
+    <p>This notice explains what Campus Connect, the IFHE Hyderabad campus map, collects and why, as the Digital Personal Data Protection Act, 2023 (DPDP Act) asks us to. Dot Club, the techno-managerial club of IBS Hyderabad, runs the map and decides how it handles data. Under the Act, that makes us the "data fiduciary".</p>
+    <p>There are no accounts, no sign-up forms and no passwords. You can search, browse and get directions without telling us who you are.</p>
+    <h3>What we collect</h3>
+    <ul>
+      <li>Nothing, unless you agree to analytics.</li>
+      <li>If you agree, Google Analytics records which pages you open, roughly where in the world you are (from your IP address), your device and browser type, and anonymous usage events. We use this to see which places people look for and where the map lets them down.</li>
+    </ul>
+    <h3>What we never collect</h3>
+    <ul>
+      <li>Your name, phone number, email or college ID.</li>
+      <li>Your GPS location. See the next section.</li>
+      <li>Anything you type into search. It stays in your browser.</li>
+    </ul>
+  </section>
+
+  <section id="location">
+    <h2>Your location</h2>
+    <p>When you tap directions and allow location, your phone works out where you are and the map uses that to draw your route. The calculation happens on your device. We do not send your position to our servers, to Google Analytics or to anyone else, and we do not store a history of where you have been.</p>
+    <p>The compass works the same way: your phone reads which way you are facing and the map turns the arrow. You can refuse location and still pick a starting point by hand or scan a QR code.</p>
+    <p>You can turn location off at any time in your browser or phone settings.</p>
+  </section>
+
+  <section id="consent">
+    <h2>Consent</h2>
+    <p>On your first visit we ask one question: may we use analytics? We ask before anything is loaded. Saying no changes nothing about how the map works.</p>
+    <p>Your answer is saved in your browser, so we do not ask again on every visit. You can change it here whenever you like, and withdrawing is as easy as agreeing was.</p>
+    <div class="choice" role="group" aria-label="Analytics choice">
+      <p>Analytics are currently <span id="consent-state">not set</span>.</p>
+      <button type="button" class="primary" id="consent-allow">Allow analytics</button>
+      <button type="button" id="consent-deny">Turn off analytics</button>
+    </div>
+    <p>If you turn analytics off, we also delete the Google Analytics cookies from this site in your browser.</p>
+  </section>
+
+  <section id="cookies">
+    <h2>Cookies and browser storage</h2>
+    <p>The map keeps a few small things in your browser so it remembers your settings. None of these are sent to us.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Name</th><th>Kind</th><th>What it is for</th><th>How long</th></tr></thead>
+        <tbody>
+          <tr><td><code>campusMapConsent</code></td><td>Local storage</td><td>Remembers your analytics choice</td><td>Until you clear it</td></tr>
+          <tr><td><code>campusMapRecentSearches</code></td><td>Local storage</td><td>Your last five places, so you can find them quickly</td><td>Until you clear it</td></tr>
+          <tr><td><code>campusMapVoice</code></td><td>Local storage</td><td>Whether spoken directions are on</td><td>Until you clear it</td></tr>
+          <tr><td><code>campusMapTourSeen</code></td><td>Local storage</td><td>Stops the welcome tour showing every time</td><td>Until you clear it</td></tr>
+          <tr><td><code>campus-map-*</code></td><td>Offline cache</td><td>Copies of the map files so it opens without internet</td><td>Replaced when the map updates</td></tr>
+          <tr><td><code>_ga</code>, <code>_ga_*</code></td><td>Cookies (Google)</td><td>Analytics, only if you allowed it</td><td>Up to 2 years</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Clearing your browser's site data for this page removes all of them.</p>
+  </section>
+
+  <section id="third-parties">
+    <h2>Third parties</h2>
+    <p>The map is a static website. To run, it loads a few files from other services, and those services see your IP address when your browser asks for them, the same as when you visit any website.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Service</th><th>What it does here</th><th>When</th></tr></thead>
+        <tbody>
+          <tr><td>GitHub Pages</td><td>Hosts the website</td><td>Every visit</td></tr>
+          <tr><td>unpkg and jsDelivr</td><td>Serve the open-source code that draws the 3D map and the guided tour</td><td>First visit, then cached</td></tr>
+          <tr><td>Google (gstatic.com)</td><td>Serves the decoder that unpacks the 3D model</td><td>First visit, then cached</td></tr>
+          <tr><td>Google Analytics</td><td>Usage statistics</td><td>Only if you allow analytics</td></tr>
+          <tr><td>Google Maps</td><td>Opens directions to the Main Gate when you are off campus</td><td>Only if you tap that link</td></tr>
+          <tr><td>Instagram</td><td>Our club pages</td><td>Only if you tap a logo</td></tr>
+          <tr><td>OpenStreetMap</td><td>Road data used for routes (© OpenStreetMap contributors, ODbL)</td><td>Built into the map; nothing is sent</td></tr>
+          <tr><td>Your browser's speech recognition (Google in Chrome, Apple in Safari)</td><td>Turns what you say into text for voice search. Your browser sends the audio to its maker to do this; we never receive or keep it</td><td>Only during a voice search, after you tap the mic and allow the microphone</td></tr>
+          <tr><td>Your browser's voice</td><td>Reads directions aloud</td><td>Only during navigation with voice on</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>About voice: some browsers, Chrome among them, can send the text of a direction to their own speech service to turn it into sound. That text is an instruction like "Turn left at the Library", not your location. Mute the speaker button to stop it.</p>
+    <p>We do not sell data and we do not share it with advertisers. Google Analytics is set up with ad personalisation and Google signals switched off.</p>
+  </section>
+
+  <section id="rights">
+    <h2>Your rights under the DPDP Act</h2>
+    <p>As a data principal you can ask us to:</p>
+    <ul>
+      <li>tell you what personal data we hold about you and who we have shared it with;</li>
+      <li>correct, complete or erase it;</li>
+      <li>stop processing it, by withdrawing consent;</li>
+      <li>nominate someone to act for you if you are unable to.</li>
+    </ul>
+    <p>Because we never ask who you are, we usually hold nothing we could link to you. The analytics we keep are pseudonymous: a random ID, not a name. If you want them gone, turn analytics off above and clear your browser data. That removes the ID, and nothing new is collected.</p>
+    <p>For any request or complaint, message us (see <a href="#contact">Contact</a>). We aim to reply within 7 days. If you are not satisfied with our answer, you can complain to the Data Protection Board of India.</p>
+  </section>
+
+  <section id="retention">
+    <h2>How long we keep data</h2>
+    <p>Settings in your browser stay until you clear them. Analytics data is kept by Google for the period set in our Google Analytics account, which Google limits to between 2 and 14 months, and is then deleted automatically. We do not keep any other copies.</p>
+  </section>
+
+  <section id="children">
+    <h2>If you are under 18</h2>
+    <p>The DPDP Act needs a parent or guardian's consent before anyone processes a child's personal data. The map works fully without analytics, so if you are under 18, please choose "No thanks" when asked, or ask a parent or guardian first.</p>
+  </section>
+
+  <section id="security">
+    <h2>Security</h2>
+    <p>The map has no logins and no database, so there are no passwords or personal records to steal. We still take care with what is there:</p>
+    <ul>
+      <li>the whole site is served over HTTPS;</li>
+      <li>a strict Content Security Policy stops the page running scripts from sources we have not approved;</li>
+      <li>third-party scripts are pinned to exact versions, and checked with integrity hashes where browsers support it;</li>
+      <li>place names are escaped before they are shown, so map data cannot inject code;</li>
+      <li>links to other sites open without giving them control of this tab.</li>
+    </ul>
+    <h3>Found a problem?</h3>
+    <p>If you find a security issue, please tell us privately first (see <a href="#contact">Contact</a>) and give us a reasonable time to fix it before sharing it. Please do not test against other people's devices or try to disrupt the site. We will thank you by name on this page if you would like.</p>
+  </section>
+
+  <section id="terms">
+    <h2>Terms of use</h2>
+    <p>Using the map means you accept these terms.</p>
+    <h3>Directions are a guide</h3>
+    <p>Paths were traced from aerial imagery and OpenStreetMap, and GPS on phones can be off by several metres. Gates may be locked, paths closed and buildings changed since the map was made. Always follow campus signs, security staff and common sense, and watch where you are going rather than the screen.</p>
+    <h3>Step-free routes</h3>
+    <p>"Avoid stairs" only avoids stairs we have marked, and lifts are not mapped yet. If you rely on step-free access, check with the campus office before relying on a route.</p>
+    <h3>Fair use</h3>
+    <p>Use the map for finding your way. Do not try to break it, overload it, or copy it wholesale to pass off as your own. The road data comes from OpenStreetMap and remains under its Open Database Licence.</p>
+    <h3>No warranty</h3>
+    <p>The map is a free student project offered as it is. To the extent the law allows, Dot Club and IBS Hyderabad are not responsible for losses that come from relying on it, such as being late for a class.</p>
+    <h3>Changes</h3>
+    <p>We may update the map and these terms. When the terms change in a way that matters, we will change the date at the top and, for anything about your data, ask again.</p>
+    <p>These terms are governed by the laws of India.</p>
+  </section>
+
+  <section id="contact">
+    <h2>Contact</h2>
+    <p>Message Dot Club on Instagram at <a href="https://www.instagram.com/dotclub_ibs/" target="_blank" rel="noopener noreferrer">@dotclub_ibs</a> for questions, data requests, complaints or security reports.</p>
+  </section>
+</main>
+
+<footer>
+  © 2026 Dot Club, IBS Hyderabad. Road data © OpenStreetMap contributors.
+</footer>
+
+<script src="js/legal.js"></script>
+</body>
+</html>

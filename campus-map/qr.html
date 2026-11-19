@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#121318">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<title>QR Codes · Campus Connect</title>
+<style>
+  :root {
+    --bg-dark: #121318;
+    --panel: #1c1e26;
+    --border: rgba(255, 255, 255, 0.1);
+    --accent-blue: #4285f4;
+    --text-main: #e8eaed;
+    --text-muted: #9aa0a6;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); }
+  body { background: var(--bg-dark); color: var(--text-main); padding: 24px 16px; }
+  main { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 6px; }
+  .hint { font-size: 14px; line-height: 1.5; color: var(--text-muted); margin-bottom: 16px; }
+  label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+  input[type="text"], input[type="url"] {
+    width: 100%; height: 44px; padding: 0 14px; margin-bottom: 14px; font-size: 16px;
+    background: var(--panel); color: var(--text-main); border: 1px solid var(--border); border-radius: 12px;
+  }
+  #place-list {
+    max-height: 280px; overflow-y: auto; margin-bottom: 14px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  }
+  .place { display: flex; align-items: center; gap: 10px; margin: 0; padding: 10px 14px; font-size: 14px; color: var(--text-main); cursor: pointer; }
+  .place + .place { border-top: 1px solid var(--border); }
+  .place input { width: 18px; height: 18px; accent-color: var(--accent-blue); flex-shrink: 0; }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 24px; }
+  button {
+    min-height: 44px; padding: 0 20px; font-size: 15px; font-weight: 600; cursor: pointer;
+    background: var(--accent-blue); color: white; border: none; border-radius: 22px;
+  }
+  button.secondary { background: transparent; border: 1px solid var(--border); color: var(--text-main); font-weight: 500; }
+  #message { font-size: 14px; color: var(--text-muted); }
+  #sheet { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  .qr-card { background: white; color: #121318; border-radius: 12px; padding: 18px; text-align: center; break-inside: avoid; }
+  .qr-card svg { display: block; width: 100%; max-width: 200px; height: auto; margin: 10px auto; }
+  .qr-title { font-size: 12px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+  .qr-place { font-size: 18px; font-weight: 700; overflow-wrap: anywhere; }
+  .qr-sub { font-size: 12px; color: #444; }
+
+  @media print {
+    body { background: white; padding: 0; }
+    .no-print { display: none !important; }
+    #sheet { grid-template-columns: repeat(2, 1fr); gap: 8mm; }
+    .qr-card { border: 1px solid #999; border-radius: 0; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="no-print">
+    <h1>Campus Connect QR codes</h1>
+    <p class="hint">Print a code for each spot you want to label. Scanning it opens the map with that spot as the starting point, so it works indoors where GPS is weak. Put each code at the place it names.</p>
+
+    <label for="base-url">Link to your live map</label>
+    <input type="url" id="base-url" autocomplete="off">
+
+    <label for="filter">Find places</label>
+    <input type="text" id="filter" placeholder="Library, Main Gate, LT..." autocomplete="off">
+
+    <div id="place-list" role="group" aria-label="Places"></div>
+
+    <div class="actions">
+      <button id="btn-print">Print selected codes</button>
+      <button id="btn-clear" class="secondary">Clear selection</button>
+      <span id="message" role="status"></span>
+    </div>
+  </div>
+
+  <div id="sheet"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js" integrity="sha384-8FWZA6BGMXhsfO+BLtrJK0We6gg5o1JyO8xQm6peWDEUs17ACA5ziE/NIAkl9z2k" crossorigin="anonymous"></script>
+<script src="js/qr.js"></script>
+</body>
+</html>

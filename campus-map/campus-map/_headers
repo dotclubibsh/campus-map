@@ -1,0 +1,13 @@
+# Security headers for hosts that read this file (Cloudflare Pages, Netlify).
+# GitHub Pages ignores it; there the pages rely on the <meta> Content Security Policy.
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(self), accelerometer=(self), gyroscope=(self), magnetometer=(self), camera=(), microphone=(self), payment=(), usb=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Content-Security-Policy: frame-ancestors 'none'
+
+/sw.js
+  Cache-Control: no-cache
